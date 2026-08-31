@@ -1,0 +1,129 @@
+export type SectorId = 'all' | '1' | '2' | '3' | '4' | '5' | '6';
+export type Season = 'summer';
+export type DataLayer = 'lst' | 'ndvi';
+export type Year = 2020 | 2021 | 2022 | 2023 | 2024 | 2025;
+export type DataMode = 'demo' | 'api';
+export type AvailabilityStatus = 'available' | 'unavailable' | 'processing';
+export type LayerAvailability = Record<DataLayer, AvailabilityStatus>;
+
+export type RegionSector = {
+  id: SectorId;
+  name: string;
+  label: string;
+  center?: [number, number];
+};
+
+export type LayerLegendItem = { label: string; color: string; value?: number | string };
+export type LayerLegend = {
+  kind: 'continuous' | 'categorical';
+  items: LayerLegendItem[];
+  note?: string;
+  domain?: [number, number];
+};
+
+export type GeographicBounds = [[number, number], [number, number]];
+export type MapLayerSource =
+  | { kind: 'none' }
+  | { kind: 'image'; url: string; bounds: GeographicBounds }
+  | { kind: 'raster-tiles'; tiles: string[]; tileSize?: number; minZoom?: number; maxZoom?: number }
+  | { kind: 'geotiff'; url: string; bounds?: GeographicBounds };
+
+export type MapLayerDescriptor = {
+  id: DataLayer;
+  name: string;
+  unit: string;
+  description: string;
+  year: number;
+  season: Season;
+  sectorId: SectorId;
+  source: MapLayerSource;
+  legend: LayerLegend;
+  availability: AvailabilityStatus;
+  isDemo: boolean;
+};
+
+export type DataAvailability = {
+  year: Year;
+  season: Season;
+  layers: LayerAvailability;
+  landCover: AvailabilityStatus;
+};
+
+export type BoundaryFeatureProperties = { sectorId: Exclude<SectorId, 'all'>; name: string };
+export type BoundaryFeature = {
+  type: 'Feature';
+  properties: BoundaryFeatureProperties;
+  geometry: { type: 'Polygon' | 'MultiPolygon'; coordinates: number[][][] | number[][][][] };
+};
+export type SectorBoundaryCollection = { type: 'FeatureCollection'; features: BoundaryFeature[] };
+
+export type DistributionBin = { label: string; value: number };
+export type RelationshipPoint = { ndvi: number; lst: number; label?: string };
+export type LandCoverEntry = { label: string; percentage: number; color: string; categoryId?: string };
+
+export type SectorStatistics = {
+  sectorId: SectorId;
+  year: number;
+  season: Season;
+  avgLst: number | null;
+  minLst: number | null;
+  maxLst: number | null;
+  avgNdvi: number | null;
+  minNdvi: number | null;
+  maxNdvi: number | null;
+  hotspotAreaPct: number | null;
+  hotspotDefinition?: string;
+  vegetatedAreaPct: number | null;
+  lstDistribution: DistributionBin[];
+  ndviDistribution: DistributionBin[];
+  ndviVsLst: RelationshipPoint[];
+};
+
+export type ReportSection = { title: string; body: string };
+export type EnvironmentalReport = {
+  title: string;
+  sections: ReportSection[];
+  dataNote: string;
+};
+
+export type ComparisonRequest = {
+  type: 'sector' | 'year';
+  layer: DataLayer;
+  primarySector: SectorId;
+  secondarySector?: SectorId;
+  primaryYear: number;
+  secondaryYear?: number;
+  season: Season;
+};
+
+export type ComparisonMetric = {
+  id: string;
+  label: string;
+  primary: number;
+  secondary: number;
+  delta: number;
+  unit: '°C' | 'NDVI' | '%' | 'percentage points';
+};
+
+export type ComparisonDataset = {
+  label: string;
+  sectorId: SectorId;
+  year: number;
+  season: Season;
+  statistics: SectorStatistics;
+  landCover: LandCoverEntry[];
+  mapLayer: MapLayerDescriptor;
+};
+
+export type ComparisonResult = {
+  type: ComparisonRequest['type'];
+  layer: DataLayer;
+  title: string;
+  context: string;
+  primary: ComparisonDataset;
+  secondary: ComparisonDataset;
+  metrics: ComparisonMetric[];
+  sharedLegend: LayerLegend;
+  report: ReportSection[];
+  isDemo: boolean;
+};
