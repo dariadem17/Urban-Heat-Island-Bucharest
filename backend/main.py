@@ -16,29 +16,6 @@ try:
 except ImportError:
     RASTERIO_AVAILABLE=False
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    process_all_geotiff()
-    yield
-    
-app=FastAPI(
-    title="Urban Heat Island Bucharest API",
-    description="Backend API providing spatial and statistical data for Bucharest",
-    version="1.0.0",
-    lifespan=lifespan
-)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-os.makedirs("static",exist_ok=True)
-app.mount("/static",StaticFiles(directory="static"),name="static")
-
 router= APIRouter()
 
 YEARS = [2015, 2018, 2020, 2023, 2025]
@@ -209,6 +186,30 @@ def process_all_geotiff():
                         print(f"SUCCESS: {ndvi_path}")
             except Exception as e:
                 print(f"Error: {e}")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    process_all_geotiff()
+    yield
+
+    
+app=FastAPI(
+    title="Urban Heat Island Bucharest API",
+    description="Backend API providing spatial and statistical data for Bucharest",
+    version="1.0.0",
+    lifespan=lifespan
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+os.makedirs("static",exist_ok=True)
+app.mount("/static",StaticFiles(directory="static"),name="static")
 
 @router.get("/years")
 def get_years():
@@ -422,6 +423,9 @@ def post_report(req: ReportReq):
         ],
         "dataNote": f"Processed data derived from Copernicus/Landsat satellite observations for {req.year}."
     }
+
+
+
 
 app.include_router(router,prefix="/api")
 app.include_router(router)
