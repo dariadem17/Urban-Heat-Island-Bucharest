@@ -1,15 +1,13 @@
-# Python cache
+
 __pycache__/
 *.py[cod]
 *$py.class
 .pytest_cache/
 
-# Virtual Environment
 venv/
 .venv/
 env/
 
-# Satellite Large Data (nu urca TIF-uri grele pe GitHub)
 *.tif
 *.TIF
 *.tiff
@@ -17,6 +15,5 @@ env/
 data/*.tif
 data/*.TIF
 
-# OS files
 .DS_Store
 Thumbs.db
