@@ -17,3 +17,11 @@ data/*.TIF
 
 .DS_Store
 Thumbs.db
+
+*.db
+*.sqlite3
+backend/uhi_data.db
+static/*.png
+backend/static/*.png
+
+.vscode/
