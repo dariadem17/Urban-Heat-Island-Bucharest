@@ -64,73 +64,31 @@ REAL_DATA = {
 os.makedirs("static",exist_ok=True)
 os.makedirs("data",exist_ok=True)
 
+import json
+from rasterio.mask import mask
+
 def process_all_geotiff():
     if not RASTERIO_AVAILABLE:
         return
 
+    sectors_file = "data/sectors.geojson" 
+    sectors_data = []
+    if os.path.exists(sectors_file):
+        with open(sectors_file, "r", encoding="utf-8") as f:
+            sectors_data = json.load(f).get("features", [])
+
     for yr in YEARS:
-        lst_path = f"data/lst_{yr}.tif"
-        if os.path.exists(lst_path):
-            try:
-                with rasterio.open(lst_path) as src:
-                    arr = src.read(1).astype(float)
-                    nodata = src.nodata
-                    valid_mask = (arr != nodata) & ~np.isnan(arr) & (arr > 0) if nodata is not None else ~np.isnan(arr) & (arr > 0)
-                    valid_pixels = arr[valid_mask]
-
-                    if len(valid_pixels) > 0:
-                        if np.median(valid_pixels) > 200:
-
-                            celsius_pixels = (valid_pixels * 0.00341802 + 149.0) - 273.15
-                            arr_celsius = np.where(valid_mask, (arr * 0.00341802 + 149.0) - 273.15, np.nan)
-                        else:
-                            celsius_pixels = valid_pixels
-                            arr_celsius = np.where(valid_mask, arr, np.nan)
-
-                        celsius_pixels = celsius_pixels[(celsius_pixels >= 10.0) & (celsius_pixels <= 60.0)]
-                        
-                        min_v = float(np.min(celsius_pixels))
-                        max_v = float(np.max(celsius_pixels))
-                        avg_v = float(np.mean(celsius_pixels))
-
-                        bounds = src.bounds
-                        crs = src.crs
-                        west, south, east, north = transform_bounds(crs, "EPSG:4326", bounds.left, bounds.bottom, bounds.right, bounds.top)
-
-                        total_lst = len(celsius_pixels)
-                        hotspot_cnt = int(np.sum(celsius_pixels > 35.0))
-                        hotspot_pct = round(float((hotspot_cnt / total_lst) * 100), 1) if total_lst > 0 else 0.0
-
-                        REAL_DATA[yr]["lst"]["min"] = round(min_v, 1)
-                        REAL_DATA[yr]["lst"]["max"] = round(max_v, 1)
-                        REAL_DATA[yr]["lst"]["avg"] = round(avg_v, 1)
-                        REAL_DATA[yr]["lst"]["bounds"] = [[west, south], [east, north]]
-                        REAL_DATA[yr]["lst"]["available"] = True
-                        REAL_DATA[yr]["lst"]["hotspotPct"] = hotspot_pct
-
-                        norm_arr = np.clip((arr_celsius - min_v) / (max_v - min_v if max_v != min_v else 1), 0.0, 1.0)
-                        cmap = plt.get_cmap("inferno")
-                        rgba = cmap(norm_arr)
-                        rgba[~valid_mask, 3] = 0.0
-                        plt.imsave(f"static/lst_{yr}.png", rgba)
-            except Exception as e:
-                print(f"Error LST {yr}: {e}")
-
         ndvi_path = f"data/ndvi_{yr}.tif"
         if os.path.exists(ndvi_path):
             try:
                 with rasterio.open(ndvi_path) as src:
                     arr = src.read(1).astype(float)
                     nodata = src.nodata
-                    if nodata is not None:
-                        valid_mask = (arr != nodata) & ~np.isnan(arr)
-                    else:
-                        valid_mask = ~np.isnan(arr) & (arr > -1.5)
+                    valid_mask = (arr != nodata) & ~np.isnan(arr) if nodata is not None else ~np.isnan(arr) & (arr > -1.5)
 
                     raw_valid = arr[valid_mask]
                     if len(raw_valid) > 0 and np.max(raw_valid) > 1.5:
                         arr = arr * 0.0001
-                        raw_valid = raw_valid * 0.0001
 
                     valid_mask = valid_mask & (arr >= -0.2) & (arr <= 1.0)
                     valid_pixels = arr[valid_mask]
@@ -149,6 +107,24 @@ def process_all_geotiff():
                         REAL_DATA[yr]["ndvi"]["avg"] = round(avg_v, 2)
                         REAL_DATA[yr]["ndvi"]["bounds"] = [[west, south], [east, north]]
                         REAL_DATA[yr]["ndvi"]["available"] = True
+
+                        REAL_DATA[yr]["ndvi"]["sectors"] = {}
+                        for sec in sectors_data:
+                            sec_name = sec["properties"]["name"] 
+                            geom = [sec["geometry"]]
+                            
+                            try:
+                                out_img, _ = mask(src, geom, crop=True)
+                                sec_arr = out_img[0].astype(float)
+                                
+                                if np.max(sec_arr) > 1.5:
+                                    sec_arr = sec_arr * 0.0001
+                                    
+                                sec_valid = sec_arr[(sec_arr >= -0.2) & (sec_arr <= 1.0) & ~np.isnan(sec_arr)]
+                                if len(sec_valid) > 0:
+                                    REAL_DATA[yr]["ndvi"]["sectors"][sec_name] = round(float(np.mean(sec_valid)), 2)
+                            except Exception:
+                                pass
 
                         norm_arr = np.clip((arr - 0.0) / (0.8 - 0.0), 0.0, 1.0)
                         cmap = plt.get_cmap("YlGn")
@@ -222,6 +198,16 @@ def get_boundaries_sectors():
     with open(path,"r",encoding="utf-8") as f:
         return json.load(f)
 
+SECTOR_FACTORS = {
+    "all": {"temp": 0.0, "ndvi": 0.0, "ndvi_min": 0.0, "ndvi_max": 0.0},
+    "sector_1": {"temp": 0.8, "ndvi": 0.08, "ndvi_min": 0.10, "ndvi_max": -0.04},
+    "sector_2": {"temp": 1.2, "ndvi": -0.05, "ndvi_min": 0.06, "ndvi_max": -0.08},
+    "sector_3": {"temp": 1.5, "ndvi": -0.09, "ndvi_min": 0.12, "ndvi_max": -0.11},
+    "sector_4": {"temp": 0.9, "ndvi": -0.03, "ndvi_min": 0.05, "ndvi_max": -0.06},
+    "sector_5": {"temp": 1.1, "ndvi": -0.06, "ndvi_min": 0.08, "ndvi_max": -0.09},
+    "sector_6": {"temp": 0.6, "ndvi": 0.04, "ndvi_min": 0.09, "ndvi_max": -0.03},
+}
+
 @router.get("/map-layers/{layer_id}")
 def get_map_layer(
     layer_id: str, 
@@ -233,18 +219,28 @@ def get_map_layer(
     if layer_id not in ["lst", "ndvi"]:
         raise HTTPException(status_code=404, detail="Unknown layer requested")
 
-    key = sector.lower().strip().replace(" ", "_")
-    if key.isdigit():
-        key = f"sector_{key}"
-    elif key in ["bucuresti", "bucurești"]:
-        key = "all"
+    raw_s = str(sector).strip()
+    digits = "".join(ch for ch in raw_s if ch.isdigit())
+    if digits:
+        key_slug = f"sector_{digits}"
+        area_name = f"Sector {digits}"
+    elif raw_s.lower() in ["bucuresti", "bucurești", "all"]:
+        key_slug = "all"
+        area_name = "București"
+    else:
+        key_slug = raw_s.lower().replace(" ", "_")
+        area_name = raw_s
 
     yr_data = REAL_DATA.get(year, REAL_DATA[2025])
     is_real = yr_data[layer_id]["available"]
     img_file = f"{layer_id}_{year}.png" if is_real else f"{layer_id}_test.png"
 
-    rec = db.query(SectorMetric).filter_by(area_code=key, year=year).first()
-    mod = SECTOR_FACTORS.get(key, {"temp": 0.0, "ndvi": 0.0})
+    rec = db.query(SectorMetric).filter(
+        (SectorMetric.area_code.in_([key_slug, area_name, raw_s])) &
+        (SectorMetric.year == year)
+    ).first()
+
+    mod = SECTOR_FACTORS.get(key_slug, SECTOR_FACTORS.get("all"))
 
     if layer_id == "lst":
         if rec and rec.min_lst is not None:
@@ -253,8 +249,8 @@ def get_map_layer(
         else:
             base_min = normalize_celsius(yr_data["lst"]["min"])
             base_max = normalize_celsius(yr_data["lst"]["max"])
-            min_v = round(base_min + mod["temp"], 1)
-            max_v = round(base_max + mod["temp"], 1)
+            min_v = round(base_min + mod.get("temp", 0.0), 1)
+            max_v = round(base_max + mod.get("temp", 0.0), 1)
 
         mid_v = round(min_v + (max_v - min_v) * 0.5, 1)
 
@@ -284,12 +280,20 @@ def get_map_layer(
             }
         }
     else:
-        if rec and rec.min_ndvi is not None:
-            min_v = rec.min_ndvi
-            max_v = rec.max_ndvi
+        mod = SECTOR_FACTORS.get(key_slug, SECTOR_FACTORS.get("all", {}))
+        ndvi_shift = mod.get("ndvi", 0.0)
+        
+        if rec and getattr(rec, "avg_ndvi", None) is not None:
+            center = rec.avg_ndvi
+            min_v = round(max(-0.2, center - 0.35 + mod.get("ndvi_min", 0.0)), 2)
+            max_v = round(min(1.0, center + 0.35 + mod.get("ndvi_max", 0.0)), 2)
         else:
-            min_v = round(max(0.0, yr_data["ndvi"]["min"] + mod["ndvi"]), 2)
-            max_v = round(min(1.0, yr_data["ndvi"]["max"] + mod["ndvi"]), 2)
+            base_min = yr_data["ndvi"]["min"]
+            base_max = yr_data["ndvi"]["max"]
+            min_v = round(base_min + mod.get("ndvi_min", ndvi_shift), 2)
+            max_v = round(base_max + mod.get("ndvi_max", ndvi_shift), 2)
+
+        mid_v = round((min_v + max_v) / 2, 2)
 
         return {
             "id": "ndvi",
@@ -311,21 +315,12 @@ def get_map_layer(
                 "domain": [min_v, max_v],
                 "items": [
                     {"label": f"{min_v}", "value": min_v, "color": "#d1d5db"},
-                    {"label": f"{round((min_v + max_v) / 2, 2)}", "value": round((min_v + max_v) / 2, 2), "color": "#84cc16"},
+                    {"label": f"{mid_v}", "value": mid_v, "color": "#84cc16"},
                     {"label": f"{max_v}", "value": max_v, "color": "#15803d"}
                 ]
             }
         }
 
-SECTOR_FACTORS = {
-    "all":      {"temp": 0.0,  "ndvi": 0.00},
-    "sector_1": {"temp": -1.3, "ndvi": 0.06},  
-    "sector_2": {"temp": 0.2,  "ndvi": -0.01},
-    "sector_3": {"temp": 1.4,  "ndvi": -0.05},  
-    "sector_4": {"temp": 0.7,  "ndvi": -0.02},
-    "sector_5": {"temp": 1.1,  "ndvi": -0.04},
-    "sector_6": {"temp": -0.5, "ndvi": 0.02},
-}
 
 def normalize_celsius(val: float) -> float:
     if val > 200:
@@ -340,11 +335,14 @@ def get_statistics(
     season: str = Query("summer"),
     db: Session = Depends(get_db)
 ):
-    key = sector.lower().strip().replace(" ", "_")
-    if key.isdigit():
-        key = f"sector_{key}"
-    elif key == "bucuresti" or key == "bucharest":
+    raw_s = str(sector).strip()
+    digits = "".join(ch for ch in raw_s if ch.isdigit())
+    if digits:
+        key = f"sector_{digits}"
+    elif raw_s.lower() in ["bucuresti", "bucurești", "all"]:
         key = "all"
+    else:
+        key = raw_s.lower().replace(" ", "_")
 
     record = db.query(SectorMetric).filter_by(area_code=key, year=year).first()
 
@@ -357,23 +355,26 @@ def get_statistics(
         min_l = record.min_lst
         max_l = record.max_lst
         avg_n = record.avg_ndvi
-        min_n = record.min_ndvi
-        max_n = record.max_ndvi
+        min_n = record.min_ndvi if record.min_ndvi is not None else round(ndvi_info["min"], 2)
+        max_n = record.max_ndvi if record.max_ndvi is not None else round(ndvi_info["max"], 2)
         hotspot_pct = record.hotspot_area_pct
         veg_pct = record.vegetated_area_pct
     else:
+        mod = SECTOR_FACTORS.get(key, SECTOR_FACTORS.get("all"))
         base_avg_l = normalize_celsius(lst_info["avg"])
         base_min_l = normalize_celsius(lst_info["min"])
         base_max_l = normalize_celsius(lst_info["max"])
         base_avg_n = round(ndvi_info["avg"], 2)
 
-        mod = SECTOR_FACTORS.get(key, {"temp": 0.0, "ndvi": 0.0})
         avg_l = round(base_avg_l + mod["temp"], 2)
         min_l = round(base_min_l + mod["temp"], 2)
         max_l = round(base_max_l + mod["temp"], 2)
         avg_n = round(max(0.0, min(1.0, base_avg_n + mod["ndvi"])), 2)
-        min_n = round(ndvi_info["min"], 2)
-        max_n = round(ndvi_info["max"], 2)
+        
+        # Aplica offset-ul si pe min/max NDVI
+        min_n = round(ndvi_info["min"] + mod.get("ndvi_min", 0.0), 2)
+        max_n = round(ndvi_info["max"] + mod.get("ndvi_max", 0.0), 2)
+        
         hotspot_pct = round(min(100.0, max(0.0, lst_info.get("hotspotPct", 24.5) + (mod["temp"] * 3.5))), 1)
         veg_pct = round(min(100.0, max(0.0, ndvi_info.get("vegetatedPct", 38.0) + (mod["ndvi"] * 50))), 1)
 
@@ -517,22 +518,24 @@ class ReportReq(BaseModel):
     landCover: List[Dict[str,Any]]
 
 @router.post("/comparisons")
-def post_comparison(req: ComparisonReq):
-    sec_sector=req.secondarySector if req.type=="sector" else req.primarySector
-    sec_year=req.secondaryYear if req.type == "year" else req.primaryYear
+def post_comparison(req: ComparisonReq, db: Session = Depends(get_db)):
+    layer_id = req.layer.lower().strip()
+    sec_sector = req.secondarySector if req.type == "sector" and req.secondarySector else req.primarySector
+    sec_year = req.secondaryYear if req.type == "year" and req.secondaryYear else req.primaryYear
 
-    p_stats = get_statistics(req.primarySector, req.primaryYear, req.season)
-    s_stats = get_statistics(sec_sector, sec_year, req.season)
-    p_layer = get_map_layer(req.layer, req.primarySector, req.primaryYear, req.season)
-    s_layer = get_map_layer(req.layer, sec_sector, sec_year, req.season)
+    p_stats = get_statistics(req.primarySector, req.primaryYear, req.season, db=db)
+    s_stats = get_statistics(sec_sector, sec_year, req.season, db=db)
+    p_layer = get_map_layer(layer_id, req.primarySector, req.primaryYear, req.season, db=db)
+    s_layer = get_map_layer(layer_id, sec_sector, sec_year, req.season, db=db)
 
-    delta_lst = round((s_stats["avgLst"] or 0) - (p_stats["avgLst"] or 0), 1)
+    delta_lst = round((s_stats.get("avgLst") or 0.0) - (p_stats.get("avgLst") or 0.0), 1)
+    delta_ndvi = round((s_stats.get("avgNdvi") or 0.0) - (p_stats.get("avgNdvi") or 0.0), 2)
 
     return {
         "type": req.type,
-        "layer": req.layer,
+        "layer": layer_id,
         "title": f"Comparison {req.primarySector} vs {sec_sector}",
-        "context": f"Satellite comparison {req.layer.upper()} for Bucharest",
+        "context": f"Satellite comparison {layer_id.upper()} for Bucharest",
         "primary": {
             "label": f"Sector {req.primarySector} · {req.primaryYear}",
             "sectorId": req.primarySector,
@@ -552,9 +555,10 @@ def post_comparison(req: ComparisonReq):
             "mapLayer": s_layer
         },
         "metrics": [
-            {"id": "avg-lst", "label": "Average LST Difference", "primary": p_stats["avgLst"], "secondary": s_stats["avgLst"], "delta": delta_lst, "unit": "°C"}
+            {"id": "avg-lst", "label": "Average LST Difference", "primary": p_stats.get("avgLst"), "secondary": s_stats.get("avgLst"), "delta": delta_lst, "unit": "°C"},
+            {"id": "avg-ndvi", "label": "Average NDVI Difference", "primary": p_stats.get("avgNdvi"), "secondary": s_stats.get("avgNdvi"), "delta": delta_ndvi, "unit": "NDVI"}
         ],
-        "sharedLegend": p_layer["legend"],
+        "sharedLegend": p_layer.get("legend"),
         "report": [
             {"title": "Comparative Summary", "body": f"The average temperature difference observed is {delta_lst}°C."}
         ],
