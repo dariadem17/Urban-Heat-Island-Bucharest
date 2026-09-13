@@ -15,19 +15,16 @@ class SectorMetric(Base):
     year = Column(Integer, index=True)
     season = Column(String, default="summer")
     
-    # LST
     avg_lst = Column(Float)
     min_lst = Column(Float)
     max_lst = Column(Float)
     hotspot_area_pct = Column(Float)
     
-    # NDVI
     avg_ndvi = Column(Float)
     min_ndvi = Column(Float)
     max_ndvi = Column(Float)
     vegetated_area_pct = Column(Float)
     
-    # Land Cover
     built_up_pct = Column(Float)
     vegetation_pct = Column(Float)
     bare_soil_pct = Column(Float)

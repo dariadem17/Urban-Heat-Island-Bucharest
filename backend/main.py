@@ -69,7 +69,6 @@ def process_all_geotiff():
         return
 
     for yr in YEARS:
-        # --- LST PROCESSING ---
         lst_path = f"data/lst_{yr}.tif"
         if os.path.exists(lst_path):
             try:
@@ -80,16 +79,14 @@ def process_all_geotiff():
                     valid_pixels = arr[valid_mask]
 
                     if len(valid_pixels) > 0:
-                        # Conversie automată din Landsat DN în grade Celsius
                         if np.median(valid_pixels) > 200:
-                            # Formula oficială Landsat Collection 2 Level-2
+
                             celsius_pixels = (valid_pixels * 0.00341802 + 149.0) - 273.15
                             arr_celsius = np.where(valid_mask, (arr * 0.00341802 + 149.0) - 273.15, np.nan)
                         else:
                             celsius_pixels = valid_pixels
                             arr_celsius = np.where(valid_mask, arr, np.nan)
 
-                        # Filtrare valori aberante
                         celsius_pixels = celsius_pixels[(celsius_pixels >= 10.0) & (celsius_pixels <= 60.0)]
                         
                         min_v = float(np.min(celsius_pixels))
@@ -111,7 +108,6 @@ def process_all_geotiff():
                         REAL_DATA[yr]["lst"]["available"] = True
                         REAL_DATA[yr]["lst"]["hotspotPct"] = hotspot_pct
 
-                        # Generare imagine colorată LST
                         norm_arr = np.clip((arr_celsius - min_v) / (max_v - min_v if max_v != min_v else 1), 0.0, 1.0)
                         cmap = plt.get_cmap("inferno")
                         rgba = cmap(norm_arr)
@@ -120,14 +116,12 @@ def process_all_geotiff():
             except Exception as e:
                 print(f"Error LST {yr}: {e}")
 
-        # --- NDVI PROCESSING ---
         ndvi_path = f"data/ndvi_{yr}.tif"
         if os.path.exists(ndvi_path):
             try:
                 with rasterio.open(ndvi_path) as src:
                     arr = src.read(1).astype(float)
                     nodata = src.nodata
-                    # Scalare automată dacă NDVI vine pe 16-biți (ex: Landsat SR multiplicat cu 10000)
                     if nodata is not None:
                         valid_mask = (arr != nodata) & ~np.isnan(arr)
                     else:
@@ -138,7 +132,6 @@ def process_all_geotiff():
                         arr = arr * 0.0001
                         raw_valid = raw_valid * 0.0001
 
-                    # Filtrează valorile fizice valide pentru suprafață terestră
                     valid_mask = valid_mask & (arr >= -0.2) & (arr <= 1.0)
                     valid_pixels = arr[valid_mask]
 
@@ -212,7 +205,7 @@ def get_availability():
 @router.get("/sectors")
 def get_sector():
     return [
-        {"id": "all", "name": "București", "label": "Bucharest"},
+        {"id": "all", "name": "Bucuresti", "label": "Bucharest"},
         {"id": "1", "name": "Sector 1", "label": "Sector 1"},
         {"id": "2", "name": "Sector 2", "label": "Sector 2"},
         {"id": "3", "name": "Sector 3", "label": "Sector 3"},
@@ -238,7 +231,7 @@ def get_map_layer(
     db: Session = Depends(get_db)
 ):
     if layer_id not in ["lst", "ndvi"]:
-        raise HTTPException(status_code=404, detail="Strat necunoscut.")
+        raise HTTPException(status_code=404, detail="Unknown layer requested")
 
     key = sector.lower().strip().replace(" ", "_")
     if key.isdigit():
@@ -250,7 +243,6 @@ def get_map_layer(
     is_real = yr_data[layer_id]["available"]
     img_file = f"{layer_id}_{year}.png" if is_real else f"{layer_id}_test.png"
 
-    # Încercăm să luăm min/max specifice sectorului din DB
     rec = db.query(SectorMetric).filter_by(area_code=key, year=year).first()
     mod = SECTOR_FACTORS.get(key, {"temp": 0.0, "ndvi": 0.0})
 
@@ -292,7 +284,6 @@ def get_map_layer(
             }
         }
     else:
-        # NDVI Layer
         if rec and rec.min_ndvi is not None:
             min_v = rec.min_ndvi
             max_v = rec.max_ndvi
@@ -326,12 +317,11 @@ def get_map_layer(
             }
         }
 
-# Factori de ajustare realistă per sector față de media orașului
 SECTOR_FACTORS = {
     "all":      {"temp": 0.0,  "ndvi": 0.00},
-    "sector_1": {"temp": -1.3, "ndvi": 0.06},  # Mai răcoros, parcuri / Herăstrău
+    "sector_1": {"temp": -1.3, "ndvi": 0.06},  
     "sector_2": {"temp": 0.2,  "ndvi": -0.01},
-    "sector_3": {"temp": 1.4,  "ndvi": -0.05},  # Zonă mai densă / insulă de căldură
+    "sector_3": {"temp": 1.4,  "ndvi": -0.05},  
     "sector_4": {"temp": 0.7,  "ndvi": -0.02},
     "sector_5": {"temp": 1.1,  "ndvi": -0.04},
     "sector_6": {"temp": -0.5, "ndvi": 0.02},
@@ -579,7 +569,6 @@ def post_report(req: ReportReq, db: Session = Depends(get_db)):
     elif key in ["bucuresti", "bucurești"]:
         key = "all"
 
-    # Preluare date din DB sau fallback din dicționar
     record = db.query(SectorMetric).filter_by(area_code=key, year=req.year).first()
     city_rec = db.query(SectorMetric).filter_by(area_code="all", year=req.year).first()
 
@@ -590,7 +579,6 @@ def post_report(req: ReportReq, db: Session = Depends(get_db)):
         delta_temp = round(avg_lst - city_rec.avg_lst, 1)
         built_pct = record.built_up_pct
     else:
-        # Fallback determinist
         yr_data = REAL_DATA.get(req.year, REAL_DATA[2025])
         mod = SECTOR_FACTORS.get(key, {"temp": 0.0, "ndvi": 0.0})
         base_avg_l = normalize_celsius(yr_data["lst"]["avg"])
@@ -602,7 +590,6 @@ def post_report(req: ReportReq, db: Session = Depends(get_db)):
 
     area_label = "Bucharest Metropolitan Area" if key == "all" else f"Sector {req.sectorId}"
 
-    # Generare dinamică a evaluării termice în funcție de anomalie
     if key == "all":
         summary_text = (
             f"Across Bucharest in {req.year}, the city-wide baseline surface temperature averaged {avg_lst}°C, "
@@ -624,7 +611,6 @@ def post_report(req: ReportReq, db: Session = Depends(get_db)):
             f"averaging {avg_lst}°C with an estimated {hotspot_pct}% hotspot coverage."
         )
 
-    # Generare dinamică a impactului vegetației
     if avg_ndvi >= 0.40:
         veg_text = (
             f"Healthy green infrastructure is present (NDVI {avg_ndvi}). Tree canopies and vegetation buffers "
@@ -641,7 +627,6 @@ def post_report(req: ReportReq, db: Session = Depends(get_db)):
             f"substantially amplifies daytime thermal retention."
         )
 
-    # Recomandări adaptate profilului sectorului
     if delta_temp > 0.5 or avg_ndvi < 0.35:
         rec_text = (
             "High priority: Implement cool roof membranes, retrofit parking areas with permeable paving, "
