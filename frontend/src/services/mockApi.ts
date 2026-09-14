@@ -111,7 +111,8 @@ function reportFor(stats: SectorStatistics, landCover: LandCoverEntry[]): Enviro
     { title: 'Thermal signal', body: stats.avgLst === null ? 'LST statistics are unavailable.' : `The preview dataset has an average land surface temperature of ${stats.avgLst}°C, with values from ${stats.minLst}°C to ${stats.maxLst}°C.` },
     { title: 'Vegetation signal', body: stats.avgNdvi === null ? 'NDVI statistics are unavailable.' : `The preview dataset has an average NDVI of ${stats.avgNdvi}, with a range from ${stats.minNdvi} to ${stats.maxNdvi}.` },
     { title: 'Land-cover context', body: dominant ? `${dominant.label} is the largest preview category at ${dominant.percentage}%.` : 'Land-cover data is unavailable for this dataset.' },
-    { title: 'Key observation', body: 'The selected preview data shows lower LST values among observations associated with higher NDVI values. This describes an association, not a causal effect.' },
+    { title: 'What to investigate', body: 'For this preview only: inspect shade, existing vegetation, and exposed paving at site level. Real intervention priorities require validated raster and Land Cover evidence.' },
+    { title: 'Data limitations', body: 'This is synthetic demo data. It cannot establish actual heat exposure, a vegetation–temperature relationship, or an intervention priority. LST represents surface temperature, not air temperature.' },
   ];
   return { title: 'Environmental summary', sections, dataNote: `Preview dataset · ${location} · Summer ${stats.year}. Values are deterministic demo data.` };
 }

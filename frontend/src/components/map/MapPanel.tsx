@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AlertTriangle, DatabaseZap, LoaderCircle, Map as MapIcon } from 'lucide-react';
 import * as maplibregl from 'maplibre-gl';
 import type {
@@ -29,54 +29,55 @@ type MapPanelProps = {
 const BASEMAP_STYLE: maplibregl.StyleSpecification = {
   version: 8,
   sources: {
-    'carto-dark-base': {
+    'osm-base': {
       type: 'raster',
-      tiles: [
-        'https://a.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',
-        'https://b.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',
-      ],
+      tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
       tileSize: 256,
-      attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-    },
-    'carto-dark-labels': {
-      type: 'raster',
-      tiles: [
-        'https://a.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png',
-        'https://b.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png',
-      ],
-      tileSize: 256,
+      attribution: '&copy; OpenStreetMap contributors',
     },
   },
   layers: [
     { id: 'navy-background', type: 'background', paint: { 'background-color': '#07131f' } },
     {
-      id: 'carto-dark-base',
+      id: 'osm-base',
       type: 'raster',
-      source: 'carto-dark-base',
+      source: 'osm-base',
       paint: {
-        'raster-opacity': 0.84,
-        'raster-saturation': -0.38,
-        'raster-contrast': 0.12,
-        'raster-brightness-min': 0.08,
-        'raster-brightness-max': 0.76,
+        'raster-opacity': 0.9,
+        'raster-saturation': -0.85,
+        'raster-contrast': 0.18,
+        'raster-brightness-min': 0.04,
+        'raster-brightness-max': 0.42,
       },
-    },
-    {
-      id: 'carto-dark-labels',
-      type: 'raster',
-      source: 'carto-dark-labels',
-      paint: { 'raster-opacity': 0.72 },
     },
   ],
 };
 
-const BASEMAP_LABELS = 'carto-dark-labels';
 const BOUNDARY_SOURCE = 'bucharest-sector-boundaries';
 const BOUNDARY_FILL = 'bucharest-sector-fill';
 const BOUNDARY_LINE = 'bucharest-sector-line';
 const SELECTED_BOUNDARY_LINE = 'bucharest-selected-sector-line';
 const OVERLAY_SOURCE = 'scientific-overlay-source';
 const OVERLAY_LAYER = 'scientific-overlay-layer';
+
+const preloadedScientificImages = new Map<string, HTMLImageElement>();
+
+function getScientificImageUrl(sourceUrl: string, layer: DataLayer, year: number) {
+  const url = new URL(sourceUrl, window.location.href);
+  url.pathname = url.pathname.replace(/\/(?:lst|ndvi)_\d+\.png$/, `/${layer}_${year}.png`);
+  url.searchParams.set('layer', layer);
+  url.searchParams.set('year', String(year));
+  return url.toString();
+}
+
+function preloadScientificImage(url: string) {
+  if (preloadedScientificImages.has(url)) return;
+  const image = new Image();
+  image.crossOrigin = 'anonymous';
+  image.decoding = 'async';
+  image.onload = () => preloadedScientificImages.set(url, image);
+  image.src = url;
+}
 
 function getGeoJsonBounds(boundaries: SectorBoundaryCollection, selectedSector: SectorId) {
   const bounds = new maplibregl.LngLatBounds();
@@ -119,11 +120,19 @@ export function MapPanel({
 }: MapPanelProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
+  const styleReadyRef = useRef(false);
+  const [styleRevision, setStyleRevision] = useState(0);
   const sectorSelectRef = useRef(onSectorSelect);
 
   useEffect(() => {
     sectorSelectRef.current = onSectorSelect;
   }, [onSectorSelect]);
+
+  useEffect(() => {
+    if (layerDescriptor?.source.kind !== 'image') return;
+    preloadScientificImage(getScientificImageUrl(layerDescriptor.source.url, 'lst', selectedYear));
+    preloadScientificImage(getScientificImageUrl(layerDescriptor.source.url, 'ndvi', selectedYear));
+  }, [layerDescriptor, selectedYear]);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -137,6 +146,11 @@ export function MapPanel({
       attributionControl: { compact: true },
     });
     mapRef.current = map;
+    const handleStyleLoad = () => {
+      styleReadyRef.current = true;
+      setStyleRevision((revision) => revision + 1);
+    };
+    map.on('style.load', handleStyleLoad);
     map.addControl(new maplibregl.NavigationControl({ showCompass: true, showZoom: true }), 'top-right');
     map.addControl(new maplibregl.ScaleControl({ maxWidth: 120, unit: 'metric' }), 'bottom-left');
 
@@ -145,6 +159,8 @@ export function MapPanel({
 
     return () => {
       resizeObserver.disconnect();
+      map.off('style.load', handleStyleLoad);
+      styleReadyRef.current = false;
       map.remove();
       mapRef.current = null;
     };
@@ -152,7 +168,7 @@ export function MapPanel({
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !boundaries) return;
+    if (!map || !boundaries || !styleReadyRef.current) return;
 
     const addBoundaries = () => {
       const existingSource = map.getSource(BOUNDARY_SOURCE) as maplibregl.GeoJSONSource | undefined;
@@ -173,7 +189,7 @@ export function MapPanel({
           'fill-color': ['case', ['==', ['get', 'sectorId'], selectedSector], '#34d399', '#0f766e'],
           'fill-opacity': ['case', ['==', ['get', 'sectorId'], selectedSector], 0.28, 0.08],
         },
-      }, BASEMAP_LABELS);
+      });
       map.addLayer({
         id: BOUNDARY_LINE,
         type: 'line',
@@ -183,7 +199,7 @@ export function MapPanel({
           'line-width': 1.25,
           'line-opacity': 0.78,
         },
-      }, BASEMAP_LABELS);
+      });
       map.addLayer({
         id: SELECTED_BOUNDARY_LINE,
         type: 'line',
@@ -194,7 +210,7 @@ export function MapPanel({
           'line-width': 3,
           'line-opacity': 0.98,
         },
-      }, BASEMAP_LABELS);
+      });
       map.on('click', BOUNDARY_FILL, (event) => {
         const sectorId = event.features?.[0]?.properties?.sectorId as SectorId | undefined;
         if (sectorId) sectorSelectRef.current(sectorId);
@@ -203,13 +219,12 @@ export function MapPanel({
       map.on('mouseleave', BOUNDARY_FILL, () => { map.getCanvas().style.cursor = ''; });
     };
 
-    if (map.loaded()) addBoundaries();
-    else map.once('load', addBoundaries);
-  }, [boundaries, selectedSector]);
+    addBoundaries();
+  }, [boundaries, selectedSector, styleRevision]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
+    if (!map || !styleReadyRef.current) return;
     const updateSelection = () => {
       if (map.getLayer(BOUNDARY_FILL)) {
         map.setPaintProperty(BOUNDARY_FILL, 'fill-color', ['case', ['==', ['get', 'sectorId'], selectedSector], '#34d399', '#0f766e']);
@@ -221,34 +236,57 @@ export function MapPanel({
 
       const geographicBounds = boundaries ? getGeoJsonBounds(boundaries, selectedSector) : null;
       if (geographicBounds) {
-        map.fitBounds(geographicBounds, { padding: 64, maxZoom: 13, duration: 650 });
+        map.stop();
+        map.fitBounds(geographicBounds, {
+          padding: selectedSector === 'all' ? 56 : 88,
+          maxZoom: selectedSector === 'all' ? 11 : 12.4,
+          duration: 900,
+        });
         return;
       }
       const selected = sectors.find((sector) => sector.id === selectedSector);
-      if (selected?.center) map.easeTo({ center: selected.center, zoom: selectedSector === 'all' ? 10.3 : 11.1, duration: 650 });
+      if (selected?.center) {
+        map.stop();
+        map.easeTo({ center: selected.center, zoom: selectedSector === 'all' ? 10.3 : 11.4, duration: 900 });
+      }
     };
 
-    if (map.loaded()) updateSelection();
-    else map.once('load', updateSelection);
-  }, [boundaries, sectors, selectedSector]);
+    // Camera movements do not need to wait for all raster tiles to finish
+    // loading. Waiting on `load` here can deadlock after the initial map load.
+    updateSelection();
+  }, [boundaries, sectors, selectedSector, styleRevision]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
+    if (!map || !styleReadyRef.current) return;
 
     const updateOverlay = () => {
-      removeScientificOverlay(map);
-      if (!layerDescriptor || layerDescriptor.availability !== 'available') return;
+      if (!layerDescriptor || layerDescriptor.availability !== 'available') {
+        removeScientificOverlay(map);
+        return;
+      }
       const source = layerDescriptor.source;
 
       if (source.kind === 'image') {
         const [[west, south], [east, north]] = source.bounds;
-        map.addSource(OVERLAY_SOURCE, {
-          type: 'image',
-          url: source.url,
-          coordinates: [[west, north], [east, north], [east, south], [west, south]],
-        });
+        const coordinates: maplibregl.Coordinates = [[west, north], [east, north], [east, south], [west, south]];
+        const imageUrl = getScientificImageUrl(source.url, selectedLayer, selectedYear);
+        const existingSource = map.getSource(OVERLAY_SOURCE) as maplibregl.ImageSource | undefined;
+
+        if (existingSource?.type === 'image') {
+          const preloadedImage = preloadedScientificImages.get(imageUrl);
+          if (preloadedImage) existingSource.updateImage({ image: preloadedImage, coordinates });
+          else existingSource.updateImage({ url: imageUrl, coordinates });
+        } else {
+          removeScientificOverlay(map);
+          map.addSource(OVERLAY_SOURCE, {
+            type: 'image',
+            url: imageUrl,
+            coordinates,
+          });
+        }
       } else if (source.kind === 'raster-tiles') {
+        removeScientificOverlay(map);
         map.addSource(OVERLAY_SOURCE, {
           type: 'raster',
           tiles: source.tiles,
@@ -257,24 +295,32 @@ export function MapPanel({
           maxzoom: source.maxZoom,
         });
       } else {
+        removeScientificOverlay(map);
         return;
       }
 
-      map.addLayer({
-        id: OVERLAY_LAYER,
-        type: 'raster',
-        source: OVERLAY_SOURCE,
-        paint: { 'raster-opacity': opacity / 100, 'raster-fade-duration': 150 },
-      }, map.getLayer(BOUNDARY_FILL) ? BOUNDARY_FILL : BASEMAP_LABELS);
+      if (!map.getLayer(OVERLAY_LAYER)) {
+        const overlayLayer: maplibregl.RasterLayerSpecification = {
+          id: OVERLAY_LAYER,
+          type: 'raster',
+          source: OVERLAY_SOURCE,
+          paint: {
+            'raster-opacity': opacity / 100,
+            'raster-fade-duration': 0,
+            'raster-resampling': 'linear',
+          },
+        };
+        if (map.getLayer(BOUNDARY_FILL)) map.addLayer(overlayLayer, BOUNDARY_FILL);
+        else map.addLayer(overlayLayer);
+      }
     };
 
-    if (map.loaded()) updateOverlay();
-    else map.once('load', updateOverlay);
-  }, [layerDescriptor, opacity]);
+    updateOverlay();
+  }, [layerDescriptor, opacity, selectedLayer, selectedYear, styleRevision]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (map?.getLayer(OVERLAY_LAYER)) map.setPaintProperty(OVERLAY_LAYER, 'raster-opacity', opacity / 100);
+    if (map && styleReadyRef.current && map.getLayer(OVERLAY_LAYER)) map.setPaintProperty(OVERLAY_LAYER, 'raster-opacity', opacity / 100);
   }, [opacity]);
 
   const selectedSectorMeta = sectors.find((sector) => sector.id === selectedSector) ?? sectors[0];

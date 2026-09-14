@@ -11,6 +11,8 @@ type Props = {
   years: Year[];
   currentSector: SectorId;
   currentYear: Year;
+  selectedLayer: DataLayer;
+  opacity: number;
   boundaries: SectorBoundaryCollection | null;
   boundariesLoading: boolean;
   dataMode: DataMode;
@@ -18,11 +20,10 @@ type Props = {
 
 const layerNames: Record<DataLayer, string> = { lst: 'LST', ndvi: 'NDVI' };
 
-export function ComparisonPanel({ sectors, years, currentSector, currentYear, boundaries, boundariesLoading, dataMode }: Props) {
+export function ComparisonPanel({ sectors, years, currentSector, currentYear, selectedLayer, opacity, boundaries, boundariesLoading, dataMode }: Props) {
   const sectorOptions = sectors.filter((sector) => sector.id !== 'all');
   const initialSector = currentSector === 'all' ? '1' : currentSector;
   const [type, setType] = useState<ComparisonRequest['type']>('sector');
-  const [layer, setLayer] = useState<DataLayer>('lst');
   const [primarySector, setPrimarySector] = useState<SectorId>(initialSector);
   const [secondarySector, setSecondarySector] = useState<SectorId>(initialSector === '6' ? '1' : '6');
   const [sectorYear, setSectorYear] = useState<Year>(currentYear);
@@ -31,8 +32,8 @@ export function ComparisonPanel({ sectors, years, currentSector, currentYear, bo
   const valid = type === 'sector' ? primarySector !== secondarySector : primaryYear !== secondaryYear;
 
   const request: ComparisonRequest = type === 'sector'
-    ? { type, layer, primarySector, secondarySector, primaryYear: sectorYear, season: 'summer' }
-    : { type, layer, primarySector, primaryYear, secondaryYear, season: 'summer' };
+    ? { type, layer: selectedLayer, primarySector, secondarySector, primaryYear: sectorYear, season: 'summer' }
+    : { type, layer: selectedLayer, primarySector, primaryYear, secondaryYear, season: 'summer' };
   const comparisonQuery = useQuery({
     queryKey: [dataMode, 'comparison', request],
     queryFn: () => dataService.getComparison(request),
@@ -43,10 +44,10 @@ export function ComparisonPanel({ sectors, years, currentSector, currentYear, bo
 
   const distributionData = useMemo(() => {
     if (!result) return [];
-    const primary = layer === 'lst' ? result.primary.statistics.lstDistribution : result.primary.statistics.ndviDistribution;
-    const secondary = layer === 'lst' ? result.secondary.statistics.lstDistribution : result.secondary.statistics.ndviDistribution;
+    const primary = selectedLayer === 'lst' ? result.primary.statistics.lstDistribution : result.primary.statistics.ndviDistribution;
+    const secondary = selectedLayer === 'lst' ? result.secondary.statistics.lstDistribution : result.secondary.statistics.ndviDistribution;
     return primary.map((entry) => ({ label: entry.label, primary: entry.value, secondary: secondary.find((item) => item.label === entry.label)?.value ?? 0 }));
-  }, [layer, result]);
+  }, [selectedLayer, result]);
 
   const landCoverData = useMemo(() => result ? mergeLandCover(result.primary.landCover, result.secondary.landCover) : [], [result]);
 
@@ -61,24 +62,21 @@ export function ComparisonPanel({ sectors, years, currentSector, currentYear, bo
         </div>
 
         <div className="mt-3 rounded-2xl border border-slate-800 bg-slate-950/50 p-4">
-          <div className="mb-4 flex flex-wrap gap-2" role="group" aria-label="Comparison data layer">
-            {(['lst', 'ndvi'] as DataLayer[]).map((item) => <button key={item} type="button" onClick={() => setLayer(item)} aria-pressed={layer === item} className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${layer === item ? 'border-blue-500/50 bg-blue-500/10 text-blue-200' : 'border-slate-700 text-slate-400 hover:border-slate-600'}`}>{layerNames[item]}<span className="sr-only"> {item === 'lst' ? 'Land Surface Temperature' : 'Normalized Difference Vegetation Index'}</span></button>)}
-          </div>
           {type === 'sector' ? <div className="grid items-end gap-3 md:grid-cols-[1fr_auto_1fr_1fr]"><SelectSector label="Sector A" value={primarySector} sectors={sectorOptions} disabledValue={secondarySector} onChange={setPrimarySector} /><ArrowRightLeft className="mx-auto mb-2 h-4 w-4 text-slate-500" /><SelectSector label="Sector B" value={secondarySector} sectors={sectorOptions} disabledValue={primarySector} onChange={setSecondarySector} /><SelectYear label="Year" value={sectorYear} years={years} onChange={setSectorYear} /></div> : <div className="grid items-end gap-3 md:grid-cols-[1fr_1fr_auto_1fr]"><SelectSector label="Sector" value={primarySector} sectors={sectorOptions} onChange={setPrimarySector} /><SelectYear label="Year A" value={primaryYear} years={years} disabledValue={secondaryYear} onChange={setPrimaryYear} /><ArrowRightLeft className="mx-auto mb-2 h-4 w-4 text-slate-500" /><SelectYear label="Year B" value={secondaryYear} years={years} disabledValue={primaryYear} onChange={setSecondaryYear} /></div>}
-          {!valid ? <p className="mt-3 text-xs text-amber-300">Choose two different {type === 'sector' ? 'sectors' : 'years'} to compare.</p> : <p className="mt-3 text-[11px] text-slate-500">{layerNames[layer]} · Summer · Equivalent legend metadata on both maps</p>}
+          {!valid ? <p className="mt-3 text-xs text-amber-300">Choose two different {type === 'sector' ? 'sectors' : 'years'} to compare.</p> : <p className="mt-3 text-[11px] text-slate-500">{layerNames[selectedLayer]} · Summer · Equivalent legend metadata on both maps</p>}
         </div>
       </div>
 
       {comparisonQuery.isLoading ? <ComparisonSkeleton /> : comparisonQuery.isError ? <StateCard title="Comparison unavailable" detail="The selected datasets could not be compared. Check availability or try again when the data service is online." /> : result ? (
         <>
           <div className="grid min-w-0 gap-4 xl:grid-cols-2">
-            {[result.primary, result.secondary].map((dataset, index) => <MapPanel key={`${dataset.sectorId}-${dataset.year}`} eyebrow={`Dataset ${index === 0 ? 'A' : 'B'}`} selectedSector={dataset.sectorId} selectedLayer={layer} selectedYear={dataset.year} opacity={72} onSectorSelect={() => undefined} layerDescriptor={{ ...dataset.mapLayer, legend: result.sharedLegend }} sectors={sectors} boundaries={boundaries} boundariesLoading={boundariesLoading} layerLoading={false} layerError={false} dataMode={dataMode} />)}
+            {[result.primary, result.secondary].map((dataset, index) => <MapPanel key={`${selectedLayer}-${dataset.sectorId}-${dataset.year}`} eyebrow={`Dataset ${index === 0 ? 'A' : 'B'}`} selectedSector={dataset.sectorId} selectedLayer={selectedLayer} selectedYear={dataset.year} opacity={opacity} onSectorSelect={() => undefined} layerDescriptor={{ ...dataset.mapLayer, legend: result.sharedLegend }} sectors={sectors} boundaries={boundaries} boundariesLoading={boundariesLoading} layerLoading={false} layerError={false} dataMode={dataMode} />)}
           </div>
 
           <section className="rounded-[1.5rem] border border-slate-800 bg-slate-900/80 p-4"><div className="flex flex-wrap items-end justify-between gap-2"><div><p className="text-[10px] uppercase tracking-[0.2em] text-slate-400">Comparison metrics</p><h3 className="mt-1 text-base font-semibold text-slate-100">{result.title}</h3></div><p className="text-xs text-slate-500">Delta = second dataset minus first dataset</p></div><div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">{result.metrics.map((item) => <MetricCard key={item.id} metric={item} />)}</div></section>
 
           <section className="grid gap-4 xl:grid-cols-2">
-            <ComparisonChart title={`${layerNames[layer]} distribution comparison`} data={distributionData} primaryLabel={result.primary.label} secondaryLabel={result.secondary.label} />
+            <ComparisonChart title={`${layerNames[selectedLayer]} distribution comparison`} data={distributionData} primaryLabel={result.primary.label} secondaryLabel={result.secondary.label} />
             {landCoverData.length ? <ComparisonChart title="Land-cover distribution comparison" data={landCoverData} primaryLabel={result.primary.label} secondaryLabel={result.secondary.label} /> : <StateCard title="Land-cover comparison unavailable" detail="One or both selected datasets do not include land-cover context." />}
           </section>
 

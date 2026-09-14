@@ -23,7 +23,7 @@ function App() {
   const [selectedSector, setSelectedSector] = useState<SectorId>(defaultSector);
   const [selectedYear, setSelectedYear] = useState<Year>(defaultYear);
   const [selectedLayer, setSelectedLayer] = useState<DataLayer>(defaultLayer);
-  const [opacity, setOpacity] = useState<number>(72);
+  const [opacity, setOpacity] = useState<number>(52);
   const [season, setSeason] = useState<Season>(defaultSeason);
   const [view, setView] = useState<AppView>('overview');
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -65,7 +65,7 @@ function App() {
     setSelectedSector(defaultSector);
     setSelectedYear(defaultYear);
     setSelectedLayer(defaultLayer);
-    setOpacity(72);
+    setOpacity(52);
     setSeason(defaultSeason);
   };
 
@@ -182,6 +182,8 @@ function App() {
                 years={yearsQuery.data ?? []}
                 currentSector={selectedSector}
                 currentYear={selectedYear}
+                selectedLayer={selectedLayer}
+                opacity={opacity}
                 boundaries={boundariesQuery.data ?? null}
                 boundariesLoading={boundariesQuery.isLoading}
                 dataMode={dataMode}

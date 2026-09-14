@@ -216,3 +216,10 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Local geospatial source data (too large for Git)
+/backend/data/*.[tT][iI][fF]
+/backend/data/*.[tT][iI][fF][fF]
+/backend/data/lst/
+/backend/data/ndvi/
+/backend/data/*.qgz/

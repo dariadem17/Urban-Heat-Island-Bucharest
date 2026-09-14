@@ -34,11 +34,17 @@ export function useDashboardData(
     queryKey: [serviceKey, 'land-cover', selectedSector, selectedYear, season],
     queryFn: () => dataService.getLandCover(selectedSector, selectedYear, season),
   });
-  const layerQuery = useQuery({
-    queryKey: [serviceKey, 'map-layer', selectedLayer, selectedSector, selectedYear, season],
-    queryFn: () => dataService.getMapLayer(selectedLayer, selectedSector, selectedYear, season),
+  const lstLayerQuery = useQuery({
+    queryKey: [serviceKey, 'map-layer', 'lst', selectedSector, selectedYear, season],
+    queryFn: () => dataService.getMapLayer('lst', selectedSector, selectedYear, season),
     retry: false,
   });
+  const ndviLayerQuery = useQuery({
+    queryKey: [serviceKey, 'map-layer', 'ndvi', selectedSector, selectedYear, season],
+    queryFn: () => dataService.getMapLayer('ndvi', selectedSector, selectedYear, season),
+    retry: false,
+  });
+  const layerQuery = selectedLayer === 'lst' ? lstLayerQuery : ndviLayerQuery;
 
   return {
     availabilityQuery,

@@ -1,7 +1,7 @@
 export type SectorId = 'all' | '1' | '2' | '3' | '4' | '5' | '6';
 export type Season = 'summer';
 export type DataLayer = 'lst' | 'ndvi';
-export type Year = 2020 | 2021 | 2022 | 2023 | 2024 | 2025;
+export type Year = 2015 | 2018 | 2020 | 2021 | 2022 | 2023 | 2024 | 2025;
 export type DataMode = 'demo' | 'api';
 export type AvailabilityStatus = 'available' | 'unavailable' | 'processing';
 export type LayerAvailability = Record<DataLayer, AvailabilityStatus>;
@@ -76,14 +76,42 @@ export type SectorStatistics = {
   vegetatedAreaPct: number | null;
   lstDistribution: DistributionBin[];
   ndviDistribution: DistributionBin[];
+  ndviSurfaceBreakdown?: LandCoverEntry[];
   ndviVsLst: RelationshipPoint[];
+  lstNdviRelationship?: {
+    available: boolean;
+    spearmanRho?: number;
+    sampleCount?: number;
+    summary?: string;
+    reason?: string;
+  };
 };
 
 export type ReportSection = { title: string; body: string };
 export type EnvironmentalReport = {
   title: string;
+  summary?: string;
   sections: ReportSection[];
   dataNote: string;
+  assessment?: {
+    area: { code: string; name: string };
+    thermal: { available: boolean; avgLstC: number | null; deltaVsCityC: number | null; hotspotAreaPct: number | null; score: number | null; level: string | null };
+    vegetation: { available: boolean; avgNdvi: number | null; deltaVsCity: number | null; deficitScore: number | null; level: string | null };
+    cooling: {
+      available: boolean;
+      pearsonR?: number;
+      spearmanRho?: number;
+      sampleCount?: number;
+      strength?: string;
+      summary?: string;
+      reason?: string;
+      contrast?: { lowNdviMeanLstC: number; highNdviMeanLstC: number; highMinusLowC: number } | null;
+    };
+    builtPressure: { available: boolean; reason?: string };
+    resilience: { available: boolean; reason?: string };
+    intervention: { priority: string; recommendations: string[] };
+    benchmark: { method: string };
+  };
 };
 
 export type ComparisonRequest = {
