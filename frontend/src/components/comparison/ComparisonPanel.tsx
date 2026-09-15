@@ -22,15 +22,24 @@ const layerNames: Record<DataLayer, string> = { lst: 'LST', ndvi: 'NDVI' };
 
 export function ComparisonPanel({ sectors, years, currentSector, currentYear, selectedLayer, opacity, boundaries, boundariesLoading, dataMode }: Props) {
   const sectorOptions = sectors.filter((sector) => sector.id !== 'all');
-  const initialSector = currentSector === 'all' ? '1' : currentSector;
   const latestYear = years.at(-1) ?? 2025;
-  const [type, setType] = useState<ComparisonRequest['type']>(currentYear < latestYear ? 'year' : 'sector');
+  const startsWithYearComparison = currentYear < latestYear;
+  const initialSector = startsWithYearComparison ? currentSector : currentSector === 'all' ? '1' : currentSector;
+  const [type, setType] = useState<ComparisonRequest['type']>(startsWithYearComparison ? 'year' : 'sector');
   const [primarySector, setPrimarySector] = useState<SectorId>(initialSector);
   const [secondarySector, setSecondarySector] = useState<SectorId>(initialSector === '6' ? '1' : '6');
   const [sectorYear, setSectorYear] = useState<Year>(currentYear);
   const [primaryYear, setPrimaryYear] = useState<Year>(currentYear < latestYear ? currentYear : years.at(-2) ?? 2023);
   const [secondaryYear, setSecondaryYear] = useState<Year>(latestYear);
   const valid = type === 'sector' ? primarySector !== secondarySector : primaryYear !== secondaryYear;
+
+  const showSectorComparison = () => {
+    if (primarySector === 'all') {
+      setPrimarySector('1');
+      if (secondarySector === '1') setSecondarySector('6');
+    }
+    setType('sector');
+  };
 
   const request: ComparisonRequest = type === 'sector'
     ? { type, layer: selectedLayer, primarySector, secondarySector, primaryYear: sectorYear, season: 'summer' }
@@ -60,12 +69,12 @@ export function ComparisonPanel({ sectors, years, currentSector, currentYear, se
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4"><div><p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-400">Comparatie</p><h2 className="mt-1 text-lg font-semibold text-slate-50">Compara datele</h2></div><span className="rounded-full border border-slate-700 bg-slate-800 px-3 py-1.5 text-[11px] text-slate-300">Date de vara · {dataMode === 'demo' ? 'Date demonstrative' : 'Date din API'}</span></div>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <ModeButton active={type === 'sector'} icon={Layers3} title="Compara sectoare" detail="Doua sectoare in acelasi an" onClick={() => setType('sector')} />
+          <ModeButton active={type === 'sector'} icon={Layers3} title="Compara sectoare" detail="Doua sectoare in acelasi an" onClick={showSectorComparison} />
           <ModeButton active={type === 'year'} icon={CalendarRange} title="Compara ani" detail="Acelasi sector in doi ani" onClick={() => setType('year')} />
         </div>
 
         <div className="mt-3 rounded-2xl border border-slate-800 bg-slate-950/50 p-4">
-          {type === 'sector' ? <div className="grid items-end gap-3 md:grid-cols-[1fr_auto_1fr_1fr]"><SelectSector label="Sector A" value={primarySector} sectors={sectorOptions} disabledValue={secondarySector} onChange={setPrimarySector} /><ArrowRightLeft className="mx-auto mb-2 h-4 w-4 text-slate-500" /><SelectSector label="Sector B" value={secondarySector} sectors={sectorOptions} disabledValue={primarySector} onChange={setSecondarySector} /><SelectYear label="An" value={sectorYear} years={years} onChange={setSectorYear} /></div> : <div className="grid items-end gap-3 md:grid-cols-[1fr_1fr_auto_1fr]"><SelectSector label="Sector" value={primarySector} sectors={sectorOptions} onChange={setPrimarySector} /><SelectYear label="Anul A" value={primaryYear} years={years} disabledValue={secondaryYear} onChange={setPrimaryYear} /><ArrowRightLeft className="mx-auto mb-2 h-4 w-4 text-slate-500" /><SelectYear label="Anul B" value={secondaryYear} years={years} disabledValue={primaryYear} onChange={setSecondaryYear} /></div>}
+          {type === 'sector' ? <div className="grid items-end gap-3 md:grid-cols-[1fr_auto_1fr_1fr]"><SelectSector label="Sector A" value={primarySector} sectors={sectorOptions} disabledValue={secondarySector} onChange={setPrimarySector} /><ArrowRightLeft className="mx-auto mb-2 h-4 w-4 text-slate-500" /><SelectSector label="Sector B" value={secondarySector} sectors={sectorOptions} disabledValue={primarySector} onChange={setSecondarySector} /><SelectYear label="An" value={sectorYear} years={years} onChange={setSectorYear} /></div> : <div className="grid items-end gap-3 md:grid-cols-[1fr_1fr_auto_1fr]"><SelectSector label="Zona" value={primarySector} sectors={sectors} onChange={setPrimarySector} /><SelectYear label="Anul A" value={primaryYear} years={years} disabledValue={secondaryYear} onChange={setPrimaryYear} /><ArrowRightLeft className="mx-auto mb-2 h-4 w-4 text-slate-500" /><SelectYear label="Anul B" value={secondaryYear} years={years} disabledValue={primaryYear} onChange={setSecondaryYear} /></div>}
           {!valid ? <p className="mt-3 text-xs text-amber-300">Alege {type === 'sector' ? 'doua sectoare' : 'doi ani'} diferite pentru comparatie.</p> : <p className="mt-3 text-[11px] text-slate-500">{layerNames[selectedLayer]} · Vara · Aceeasi scara pe ambele harti</p>}
         </div>
       </div>
@@ -78,7 +87,7 @@ export function ComparisonPanel({ sectors, years, currentSector, currentYear, se
 
           <section className="rounded-[1.5rem] border border-slate-800 bg-slate-900/80 p-4"><div className="flex flex-wrap items-end justify-between gap-2"><div><p className="text-[10px] uppercase tracking-[0.2em] text-slate-400">Indicatori comparati</p><h3 className="mt-1 text-base font-semibold text-slate-100">{result.title}</h3></div><p className="text-xs text-slate-500">Diferenta = selectia B minus selectia A</p></div><div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">{result.metrics.map((item) => <MetricCard key={item.id} metric={item} />)}</div></section>
 
-          {result.type === 'year' && result.timeline?.length ? <TemporalTrendPanel timeline={result.timeline} /> : null}
+          {result.type === 'year' && result.timeline?.length ? <TemporalTrendPanel timeline={result.timeline} city={result.primary.sectorId === 'all'} /> : null}
 
           <section className="grid gap-4 xl:grid-cols-2">
             <ComparisonChart title={`Distributia ${layerNames[selectedLayer]}`} description={selectedLayer === 'ndvi' ? 'Verde = selectia A, albastru = B. Fiecare grupa arata procentul zonei cu NDVI in acel interval; spre dreapta inseamna un semnal de vegetatie mai puternic.' : 'Verde = selectia A, albastru = B. Fiecare grupa arata procentul zonei intr-un interval de temperatura; spre dreapta inseamna suprafete mai calde.'} reading={distributionReading} data={distributionData} primaryLabel={result.primary.label} secondaryLabel={result.secondary.label} />
@@ -109,17 +118,23 @@ function MetricCard({ metric }: { metric: ComparisonMetric }) {
   return <article className="rounded-xl border border-slate-800 bg-slate-950/50 p-3"><p className="text-[10px] uppercase tracking-[0.18em] text-slate-400">{metric.label}</p><div className="mt-3 flex items-end justify-between gap-2"><span className="text-xl font-semibold text-slate-50">{metric.primary}<small className="ml-1 text-[10px] font-normal text-slate-500">{valueUnit}</small></span><span className="pb-1 text-xs text-slate-600">fata de</span><span className="text-xl font-semibold text-slate-50">{metric.secondary}<small className="ml-1 text-[10px] font-normal text-slate-500">{valueUnit}</small></span></div><p className="mt-3 text-[11px] text-slate-400">Diferenta: <span className="font-medium text-slate-200">{metric.delta > 0 ? '+' : ''}{metric.delta} {metric.unit === 'percentage points' ? 'puncte procentuale' : metric.unit}</span></p></article>;
 }
 
-function TemporalTrendPanel({ timeline }: { timeline: NonNullable<ComparisonResult['timeline']> }) {
-  const lstValues = timeline.map((entry) => entry.lstVsCity).filter((value): value is number => value !== null);
-  const ndviValues = timeline.map((entry) => entry.ndviVsCity).filter((value): value is number => value !== null);
-  const lstDomain: [number, number] = [Math.min(0, ...lstValues) - 0.1, Math.max(0, ...lstValues) + 0.1];
-  const ndviDomain: [number, number] = [Math.min(0, ...ndviValues) - 0.005, Math.max(0, ...ndviValues) + 0.005];
+function TemporalTrendPanel({ timeline, city }: { timeline: NonNullable<ComparisonResult['timeline']>; city: boolean }) {
+  const lstKey = city ? 'lst' : 'lstVsCity';
+  const ndviKey = city ? 'ndvi' : 'ndviVsCity';
+  const lstValues = timeline.map((entry) => entry[lstKey]).filter((value): value is number => value !== null);
+  const ndviValues = timeline.map((entry) => entry[ndviKey]).filter((value): value is number => value !== null);
+  const lstDomain: [number, number] = city
+    ? [Math.min(...lstValues) - 0.5, Math.max(...lstValues) + 0.5]
+    : [Math.min(0, ...lstValues) - 0.1, Math.max(0, ...lstValues) + 0.1];
+  const ndviDomain: [number, number] = city
+    ? [Math.min(...ndviValues) - 0.01, Math.max(...ndviValues) + 0.01]
+    : [Math.min(0, ...ndviValues) - 0.005, Math.max(0, ...ndviValues) + 0.005];
   return <section className="rounded-[1.5rem] border border-slate-800 bg-slate-900/80 p-4">
-    <h3 className="text-base font-semibold text-slate-100">Evolutia fata de media orasului</h3>
-    <p className="mt-1 text-xs leading-5 text-slate-400">Fiecare punct este un an observat. Linia 0 reprezinta media Bucurestiului din acelasi an; graficul arata un semnal repetat sau variabil, nu o prognoza.</p>
+    <h3 className="text-base font-semibold text-slate-100">{city ? 'Evolutia Bucurestiului' : 'Evolutia fata de media orasului'}</h3>
+    <p className="mt-1 text-xs leading-5 text-slate-400">{city ? 'Fiecare punct este media unei observatii disponibile pentru Bucuresti. Seria descrie trecutul si nu reprezinta o prognoza.' : 'Fiecare punct este un an observat. Linia 0 reprezinta media Bucurestiului din acelasi an; graficul arata un semnal repetat sau variabil, nu o prognoza.'}</p>
     <div className="mt-3 grid gap-3 md:grid-cols-2">
-      <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3"><p className="text-xs font-medium text-amber-200">LST fata de oras (°C)</p><p className="mt-1 text-[11px] text-slate-400">Peste 0: sectorul este mai cald.</p><div className="mt-2 h-40"><ResponsiveContainer width="100%" height="100%"><LineChart data={timeline} margin={{ left: 0, right: 12, top: 8, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#334155" /><XAxis dataKey="year" stroke="#cbd5e1" fontSize={10} tickLine={false} axisLine={false} /><YAxis stroke="#cbd5e1" fontSize={10} tickLine={false} axisLine={false} width={34} domain={lstDomain} /><ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="4 4" /><Tooltip formatter={(value) => [`${Number(value).toFixed(2)} °C`, 'Fata de oras']} contentStyle={{ background: '#0f172a', borderColor: '#334155', borderRadius: 12 }} /><Line type="linear" dataKey="lstVsCity" stroke="#fbbf24" strokeWidth={2.5} dot={{ r: 4 }} connectNulls={false} /></LineChart></ResponsiveContainer></div></div>
-      <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3"><p className="text-xs font-medium text-emerald-200">NDVI fata de oras</p><p className="mt-1 text-[11px] text-slate-400">Sub 0: sectorul are NDVI mai mic.</p><div className="mt-2 h-40"><ResponsiveContainer width="100%" height="100%"><LineChart data={timeline} margin={{ left: 0, right: 12, top: 8, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#334155" /><XAxis dataKey="year" stroke="#cbd5e1" fontSize={10} tickLine={false} axisLine={false} /><YAxis stroke="#cbd5e1" fontSize={10} tickLine={false} axisLine={false} width={44} domain={ndviDomain} /><ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="4 4" /><Tooltip formatter={(value) => [Number(value).toFixed(3), 'Fata de oras']} contentStyle={{ background: '#0f172a', borderColor: '#334155', borderRadius: 12 }} /><Line type="linear" dataKey="ndviVsCity" stroke="#34d399" strokeWidth={2.5} dot={{ r: 4 }} connectNulls={false} /></LineChart></ResponsiveContainer></div></div>
+      <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3"><p className="text-xs font-medium text-amber-200">{city ? 'LST mediu (°C)' : 'LST fata de oras (°C)'}</p><p className="mt-1 text-[11px] text-slate-400">{city ? 'Temperatura medie a suprafetei.' : 'Peste 0: sectorul este mai cald.'}</p><div className="mt-2 h-40"><ResponsiveContainer width="100%" height="100%"><LineChart data={timeline} margin={{ left: 0, right: 12, top: 8, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#334155" /><XAxis dataKey="year" stroke="#cbd5e1" fontSize={10} tickLine={false} axisLine={false} /><YAxis stroke="#cbd5e1" fontSize={10} tickLine={false} axisLine={false} width={38} domain={lstDomain} tickFormatter={(value) => Number(value).toFixed(1)} />{city ? null : <ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="4 4" />}<Tooltip formatter={(value) => [`${Number(value).toFixed(2)} °C`, city ? 'LST mediu' : 'Fata de oras']} contentStyle={{ background: '#0f172a', borderColor: '#334155', borderRadius: 12 }} /><Line type="linear" dataKey={lstKey} stroke="#fbbf24" strokeWidth={2.5} dot={{ r: 4 }} connectNulls={false} /></LineChart></ResponsiveContainer></div></div>
+      <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3"><p className="text-xs font-medium text-emerald-200">{city ? 'NDVI mediu' : 'NDVI fata de oras'}</p><p className="mt-1 text-[11px] text-slate-400">{city ? 'Valoarea medie pentru Bucuresti.' : 'Sub 0: sectorul are NDVI mai mic.'}</p><div className="mt-2 h-40"><ResponsiveContainer width="100%" height="100%"><LineChart data={timeline} margin={{ left: 0, right: 12, top: 8, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" stroke="#334155" /><XAxis dataKey="year" stroke="#cbd5e1" fontSize={10} tickLine={false} axisLine={false} /><YAxis stroke="#cbd5e1" fontSize={10} tickLine={false} axisLine={false} width={38} domain={ndviDomain} tickFormatter={(value) => Number(value).toFixed(2)} />{city ? null : <ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="4 4" />}<Tooltip formatter={(value) => [Number(value).toFixed(3), city ? 'NDVI mediu' : 'Fata de oras']} contentStyle={{ background: '#0f172a', borderColor: '#334155', borderRadius: 12 }} /><Line type="linear" dataKey={ndviKey} stroke="#34d399" strokeWidth={2.5} dot={{ r: 4 }} connectNulls={false} /></LineChart></ResponsiveContainer></div></div>
     </div>
   </section>;
 }

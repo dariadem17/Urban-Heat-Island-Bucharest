@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ArrowRightLeft, MapPinned, SlidersHorizontal } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { AnalyticsPanel } from './components/analytics/AnalyticsPanel';
@@ -27,6 +27,10 @@ function App() {
   const [season, setSeason] = useState<Season>(defaultSeason);
   const [view, setView] = useState<AppView>('overview');
   const [filtersOpen, setFiltersOpen] = useState(false);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [view]);
 
   const { availabilityQuery, boundariesQuery, statisticsQuery, landCoverQuery, layerQuery, sectorsQuery, yearsQuery } = useDashboardData(
     selectedSector,

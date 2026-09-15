@@ -56,7 +56,7 @@ export function InsightsPanel({ report, loading, error, selectedSector, onCompar
               <ul className="mt-3 space-y-2 text-xs leading-5 text-slate-200">
                 {nextSteps.map((step) => <li key={step} className="flex gap-2"><span className="text-emerald-300">•</span><span>{step}</span></li>)}
               </ul>
-              <button type="button" onClick={() => onCompare(suggestedSector)} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-400 px-3 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300">
+              <button type="button" onClick={() => onCompare(historical ? selectedSector : suggestedSector)} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-400 px-3 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300">
                 {historical ? 'Compara cu 2025' : 'Deschide comparatia'} <ArrowRightLeft className="h-4 w-4" />
               </button>
             </section>
