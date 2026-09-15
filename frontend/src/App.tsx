@@ -45,7 +45,7 @@ function App() {
     queryKey: ['explore-report', selectedSector, selectedYear, season, currentStats, landCoverQuery.data],
     queryFn: () => {
       if (!currentStats) {
-        throw new Error('No statistics available for insight generation.');
+        throw new Error('Statisticile necesare pentru raport nu sunt disponibile.');
       }
       return dataService.getReport(currentStats, landCoverQuery.data ?? []);
     },
@@ -54,11 +54,11 @@ function App() {
 
   const headerMeta = useMemo(
     () => [
-      { label: 'State', value: dataMode === 'demo' ? 'Demo data' : 'Live API' },
-      { label: 'Season', value: season.toUpperCase() },
-      { label: 'Layer', value: currentLayerName },
+      { label: 'Date', value: dataMode === 'demo' ? 'Date demonstrative' : 'Date din API' },
+      { label: 'Sezon', value: 'Vara' },
+      { label: 'Strat', value: currentLayerName },
     ],
-    [currentLayerName, season],
+    [currentLayerName],
   );
 
   const resetFilters = () => {
@@ -83,10 +83,11 @@ function App() {
 
   return (
     <div className="min-h-screen bg-[#0b1117] text-slate-100 antialiased">
-      {filtersOpen ? <button type="button" aria-label="Close filter panel" onClick={() => setFiltersOpen(false)} className="fixed inset-0 z-40 bg-slate-950/70 backdrop-blur-sm xl:hidden" /> : null}
+      {filtersOpen ? <button type="button" aria-label="Inchide filtrele" onClick={() => setFiltersOpen(false)} className="fixed inset-0 z-40 bg-slate-950/70 backdrop-blur-sm xl:hidden" /> : null}
       <div className="mx-auto flex min-h-screen max-w-[1800px] xl:flex-row">
         <aside className={`fixed inset-y-0 left-0 z-50 w-[min(88vw,320px)] overflow-y-auto border-r border-slate-800 bg-[#0d141b] transition-transform duration-200 xl:static xl:z-auto xl:w-[290px] xl:shrink-0 xl:translate-x-0 ${filtersOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           <ControlPanel
+            comparisonMode={view === 'comparison'}
             sectors={sectorsQuery.data ?? []}
             years={yearsQuery.data ?? []}
             selectedSector={selectedSector}
@@ -102,8 +103,8 @@ function App() {
             onReset={resetFilters}
             availableLayers={PRIMARY_LAYERS}
             availableSeasons={SUPPORTED_SEASONS}
-            layerAvailability={selectedAvailability}
-            opacityEnabled={layerQuery.data?.source.kind === 'image' || layerQuery.data?.source.kind === 'raster-tiles'}
+            layerAvailability={view === 'comparison' ? undefined : selectedAvailability}
+            opacityEnabled={view === 'comparison' || layerQuery.data?.source.kind === 'image' || layerQuery.data?.source.kind === 'raster-tiles'}
             onClose={() => setFiltersOpen(false)}
           />
         </aside>
@@ -112,15 +113,15 @@ function App() {
           <header className="border-b border-slate-800 bg-[#111b26]/80 px-4 py-3 backdrop-blur-sm sm:px-5">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex items-center gap-3">
-                <button type="button" onClick={() => setFiltersOpen(true)} className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700 xl:hidden" aria-label="Open filters"><SlidersHorizontal className="h-4 w-4" /></button>
+                <button type="button" onClick={() => setFiltersOpen(true)} className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700 xl:hidden" aria-label="Deschide filtrele"><SlidersHorizontal className="h-4 w-4" /></button>
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-300">
                   <MapPinned className="h-4 w-4" />
                 </div>
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-emerald-300/80">
-                    Urban Heat Island Bucharest
+                    Insula de caldura urbana - Bucuresti
                   </p>
-                  <p className="text-xs text-slate-400">{season.charAt(0).toUpperCase() + season.slice(1)} · {selectedYear}</p>
+                  <p className="text-xs text-slate-400">{view === 'overview' ? `Vara · ${selectedYear}` : 'Alege anii in panoul de comparatie'}</p>
                 </div>
               </div>
 
@@ -140,7 +141,7 @@ function App() {
                   className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-sm font-medium text-slate-100 transition hover:border-slate-500 hover:bg-slate-700"
                 >
                   <ArrowRightLeft className="h-4 w-4 text-emerald-300" />
-                  {view === 'overview' ? 'Compare' : 'Explore'}
+                  {view === 'overview' ? 'Compara' : 'Exploreaza'}
                 </button>
               </div>
             </div>
@@ -173,7 +174,7 @@ function App() {
 
                 <div className="grid gap-4 xl:grid-cols-[2.1fr_1fr]">
                   <ChartPanel stats={statisticsQuery.data ?? null} landCover={landCoverQuery.data ?? []} activeLayer={selectedLayer} loading={statisticsQuery.isLoading || landCoverQuery.isLoading} error={statisticsQuery.isError || landCoverQuery.isError} />
-                  <InsightsPanel report={reportQuery.data ?? null} loading={reportQuery.isLoading} error={reportQuery.isError} />
+                  <InsightsPanel report={reportQuery.data ?? null} loading={reportQuery.isLoading} error={reportQuery.isError} selectedSector={selectedSector} onCompare={(sector) => { if (sector) setSelectedSector(sector); setView('comparison'); }} />
                 </div>
               </>
             ) : (

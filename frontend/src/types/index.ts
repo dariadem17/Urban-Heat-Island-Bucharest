@@ -59,7 +59,16 @@ export type SectorBoundaryCollection = { type: 'FeatureCollection'; features: Bo
 
 export type DistributionBin = { label: string; value: number };
 export type RelationshipPoint = { ndvi: number; lst: number; label?: string };
-export type LandCoverEntry = { label: string; percentage: number; color: string; categoryId?: string };
+export type LandCoverEntry = {
+  label: string;
+  percentage: number;
+  color: string;
+  categoryId?: string;
+  sourceYear?: number;
+  sourceName?: string;
+  sourceUrl?: string;
+  period?: string;
+};
 
 export type SectorStatistics = {
   sectorId: SectorId;
@@ -84,13 +93,16 @@ export type SectorStatistics = {
     sampleCount?: number;
     summary?: string;
     reason?: string;
+    contrast?: { lowNdviMeanLstC: number; highNdviMeanLstC: number; highMinusLowC: number } | null;
   };
 };
 
 export type ReportSection = { title: string; body: string };
 export type EnvironmentalReport = {
   title: string;
+  mode?: 'current' | 'historical';
   summary?: string;
+  temporalSignal?: string | null;
   sections: ReportSection[];
   dataNote: string;
   assessment?: {
@@ -107,10 +119,11 @@ export type EnvironmentalReport = {
       reason?: string;
       contrast?: { lowNdviMeanLstC: number; highNdviMeanLstC: number; highMinusLowC: number } | null;
     };
-    builtPressure: { available: boolean; reason?: string };
+    landCover?: { available: boolean; sourceYear: number | null; period: string | null; entries: LandCoverEntry[] };
+    builtPressure: { available: boolean; builtPct?: number | null; reason?: string };
     resilience: { available: boolean; reason?: string };
     intervention: { priority: string; recommendations: string[] };
-    benchmark: { method: string };
+    benchmark: { method: string; prioritySectors?: { sector: SectorId }[] };
   };
 };
 
@@ -151,6 +164,7 @@ export type ComparisonResult = {
   primary: ComparisonDataset;
   secondary: ComparisonDataset;
   metrics: ComparisonMetric[];
+  timeline?: { year: number; lst: number | null; ndvi: number | null; lstVsCity: number | null; ndviVsCity: number | null; builtPct: number | null; treesPct: number | null }[];
   sharedLegend: LayerLegend;
   report: ReportSection[];
   isDemo: boolean;

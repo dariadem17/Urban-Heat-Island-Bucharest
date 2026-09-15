@@ -26,7 +26,7 @@ const DEMO_AVAILABILITY: DataAvailability[] = YEARS.map((year) => ({
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 const sectorScale = (sectorId: SectorId) => sectorId === 'all' ? 3.5 : Number(sectorId);
-const sectorLabel = (sectorId: SectorId) => sectorId === 'all' ? 'All Bucharest' : `Sector ${sectorId}`;
+const sectorLabel = (sectorId: SectorId) => sectorId === 'all' ? 'Tot Bucurestiul' : `Sectorul ${sectorId}`;
 
 function statisticsFor(sectorId: SectorId, year: number, season: Season): SectorStatistics {
   const sector = sectorScale(sectorId);
@@ -63,11 +63,11 @@ function statisticsFor(sectorId: SectorId, year: number, season: Season): Sector
       { label: '>0.8', value: Math.round(4 + (6 - sector) * 0.4) },
     ],
     ndviVsLst: [
-      { ndvi: 0.2, lst: 37.4, label: 'Sample A' },
-      { ndvi: 0.35, lst: 34.2, label: 'Sample B' },
-      { ndvi: 0.48, lst: 31.8, label: 'Sample C' },
-      { ndvi: 0.6, lst: 29.1, label: 'Sample D' },
-      { ndvi: 0.74, lst: 27.3, label: 'Sample E' },
+      { ndvi: 0.2, lst: 37.4, label: 'Exemplul A' },
+      { ndvi: 0.35, lst: 34.2, label: 'Exemplul B' },
+      { ndvi: 0.48, lst: 31.8, label: 'Exemplul C' },
+      { ndvi: 0.6, lst: 29.1, label: 'Exemplul D' },
+      { ndvi: 0.74, lst: 27.3, label: 'Exemplul E' },
     ],
   };
 }
@@ -95,7 +95,7 @@ function layerFor(layerId: DataLayer, sectorId: SectorId, year: number, season: 
     source: { kind: 'none' },
     availability,
     isDemo: true,
-    description: `${descriptor.description} Scientific imagery awaits the processed raster source.`,
+    description: `${descriptor.description} Imaginea stiintifica asteapta rasterul procesat.`,
   };
 }
 
@@ -105,16 +105,22 @@ function dominantLandCover(entries: LandCoverEntry[]) {
 
 function reportFor(stats: SectorStatistics, landCover: LandCoverEntry[]): EnvironmentalReport {
   const location = sectorLabel(stats.sectorId);
+  const latestYear = YEARS.at(-1) ?? 2025;
+  if (stats.year < latestYear) {
+    const latest = statisticsFor(stats.sectorId, latestYear, stats.season);
+    const lstReading = stats.avgLst !== null && latest.avgLst !== null ? `LST mediu: ${stats.avgLst.toFixed(1)} -> ${latest.avgLst.toFixed(1)} °C.` : 'LST nu este complet.';
+    const ndviReading = stats.avgNdvi !== null && latest.avgNdvi !== null ? `NDVI mediu: ${stats.avgNdvi.toFixed(3)} -> ${latest.avgNdvi.toFixed(3)}.` : 'NDVI nu este complet.';
+    return { title: `${location} - ${stats.year}`, mode: 'historical', summary: `${stats.year} este un reper istoric demonstrativ. Fata de ${latestYear}, ${lstReading} ${ndviReading}`, sections: [{ title: 'Ce ramane relevant azi', body: `Foloseste valorile din ${latestYear} pentru proiectele actuale; acest exemplu sintetic nu sustine o prognoza.` }], dataNote: 'Date sintetice demonstrative. Diferentele dintre ani nu arata efectul unei dezvoltari.' };
+  }
   const dominant = dominantLandCover(landCover);
+  const built = landCover.find((entry) => entry.categoryId === 'built-up')?.percentage;
+  const heat = stats.hotspotAreaPct === null ? 'Fara estimare a hotspoturilor' : `${stats.hotspotAreaPct}% din zona este foarte calda`;
+  const cover = built === undefined ? 'fara estimare a suprafetelor construite' : `${built}% suprafete construite`;
   const sections: ReportSection[] = [
-    { title: 'Environmental summary', body: `${location} is shown for the ${stats.season} ${stats.year} preview dataset.` },
-    { title: 'Thermal signal', body: stats.avgLst === null ? 'LST statistics are unavailable.' : `The preview dataset has an average land surface temperature of ${stats.avgLst}°C, with values from ${stats.minLst}°C to ${stats.maxLst}°C.` },
-    { title: 'Vegetation signal', body: stats.avgNdvi === null ? 'NDVI statistics are unavailable.' : `The preview dataset has an average NDVI of ${stats.avgNdvi}, with a range from ${stats.minNdvi} to ${stats.maxNdvi}.` },
-    { title: 'Land-cover context', body: dominant ? `${dominant.label} is the largest preview category at ${dominant.percentage}%.` : 'Land-cover data is unavailable for this dataset.' },
-    { title: 'What to investigate', body: 'For this preview only: inspect shade, existing vegetation, and exposed paving at site level. Real intervention priorities require validated raster and Land Cover evidence.' },
-    { title: 'Data limitations', body: 'This is synthetic demo data. It cannot establish actual heat exposure, a vegetation–temperature relationship, or an intervention priority. LST represents surface temperature, not air temperature.' },
+    { title: 'Ce sugereaza indicatorii', body: `${location}: ${heat}, ${cover}${dominant ? `, iar categoria dominanta este ${dominant.label.toLowerCase()}` : ''}. Compara harta LST cu NDVI pentru a cauta unde caldura coincide cu vegetatia redusa.` },
+    { title: 'Ce sa verifici pentru proiect', body: 'Verifica umbra si pavajul pe teren. Daca zona este fierbinte si are putina vegetatie, rezerva loc pentru arbori, sol permeabil si trasee umbrite.' },
   ];
-  return { title: 'Environmental summary', sections, dataNote: `Preview dataset · ${location} · Summer ${stats.year}. Values are deterministic demo data.` };
+  return { title: `${location} - ${stats.year}`, mode: 'current', sections, dataNote: `Date sintetice demonstrative, nu o evaluare a unei parcele. Verifica datele reale inainte de decizia de construire.` };
 }
 
 async function loadStaticBoundaries(): Promise<SectorBoundaryCollection | null> {
@@ -148,7 +154,7 @@ export const mockDashboardService: DashboardDataService = {
     const primaryAvailability = DEMO_AVAILABILITY.find((entry) => entry.year === request.primaryYear)?.layers[request.layer];
     const secondaryAvailability = DEMO_AVAILABILITY.find((entry) => entry.year === secondaryYear)?.layers[request.layer];
     if (primaryAvailability !== 'available' || secondaryAvailability !== 'available') {
-      throw new DataServiceError('not-found', 'One or both comparison datasets are unavailable.');
+      throw new DataServiceError('not-found', 'Unul sau ambele seturi de date nu sunt disponibile.');
     }
     const primaryStats = statisticsFor(request.primarySector, request.primaryYear, request.season);
     const secondaryStats = statisticsFor(secondarySector, secondaryYear, request.season);
@@ -160,41 +166,73 @@ export const mockDashboardService: DashboardDataService = {
     const secondaryVegetation = secondaryLandCover.find((entry) => entry.categoryId === 'vegetation')?.percentage ?? null;
     const candidates = request.layer === 'lst'
       ? [
-          metric('avg-lst', 'Average LST', primaryStats.avgLst, secondaryStats.avgLst, '°C'),
-          metric('min-lst', 'Minimum LST', primaryStats.minLst, secondaryStats.minLst, '°C'),
-          metric('max-lst', 'Maximum LST', primaryStats.maxLst, secondaryStats.maxLst, '°C'),
-          metric('hotspot', 'Hotspot area', primaryStats.hotspotAreaPct, secondaryStats.hotspotAreaPct, 'percentage points'),
-          metric('avg-ndvi', 'Average NDVI', primaryStats.avgNdvi, secondaryStats.avgNdvi, 'NDVI'),
+          metric('avg-lst', 'LST mediu', primaryStats.avgLst, secondaryStats.avgLst, '°C'),
+          metric('min-lst', 'LST minim', primaryStats.minLst, secondaryStats.minLst, '°C'),
+          metric('max-lst', 'LST maxim', primaryStats.maxLst, secondaryStats.maxLst, '°C'),
+          metric('hotspot', 'Suprafata foarte calda', primaryStats.hotspotAreaPct, secondaryStats.hotspotAreaPct, 'percentage points'),
+          metric('avg-ndvi', 'NDVI mediu', primaryStats.avgNdvi, secondaryStats.avgNdvi, 'NDVI'),
         ]
       : [
-          metric('avg-ndvi', 'Average NDVI', primaryStats.avgNdvi, secondaryStats.avgNdvi, 'NDVI'),
-          metric('min-ndvi', 'Minimum NDVI', primaryStats.minNdvi, secondaryStats.minNdvi, 'NDVI'),
-          metric('max-ndvi', 'Maximum NDVI', primaryStats.maxNdvi, secondaryStats.maxNdvi, 'NDVI'),
-          metric('vegetated', 'Vegetated area', primaryStats.vegetatedAreaPct, secondaryStats.vegetatedAreaPct, 'percentage points'),
-          metric('avg-lst', 'Average LST', primaryStats.avgLst, secondaryStats.avgLst, '°C'),
+          metric('avg-ndvi', 'NDVI mediu', primaryStats.avgNdvi, secondaryStats.avgNdvi, 'NDVI'),
+          metric('min-ndvi', 'NDVI minim', primaryStats.minNdvi, secondaryStats.minNdvi, 'NDVI'),
+          metric('max-ndvi', 'NDVI maxim', primaryStats.maxNdvi, secondaryStats.maxNdvi, 'NDVI'),
+          metric('vegetated', 'Semnal de vegetatie', primaryStats.vegetatedAreaPct, secondaryStats.vegetatedAreaPct, 'percentage points'),
+          metric('avg-lst', 'LST mediu', primaryStats.avgLst, secondaryStats.avgLst, '°C'),
         ];
     const contextual = [
-      metric('built-up', 'Built-up share', primaryBuilt, secondaryBuilt, 'percentage points'),
-      metric('vegetation', 'Vegetation share', primaryVegetation, secondaryVegetation, 'percentage points'),
+      metric('built-up', 'Zone construite', primaryBuilt, secondaryBuilt, 'percentage points'),
+      metric('vegetation', 'Vegetatie', primaryVegetation, secondaryVegetation, 'percentage points'),
     ];
-    const primaryLabel = `${sectorLabel(request.primarySector)} · Summer ${request.primaryYear}`;
-    const secondaryLabel = `${sectorLabel(secondarySector)} · Summer ${secondaryYear}`;
+    const primaryLabel = `${sectorLabel(request.primarySector)} · Vara ${request.primaryYear}`;
+    const secondaryLabel = `${sectorLabel(secondarySector)} · Vara ${secondaryYear}`;
     const metrics = [...candidates, ...contextual].filter((entry): entry is ComparisonMetric => entry !== null);
-    const keyMetric = metrics[0];
+    const temperatureDelta = primaryStats.avgLst !== null && secondaryStats.avgLst !== null ? secondaryStats.avgLst - primaryStats.avgLst : null;
+    const temperatureReading = temperatureDelta === null || primaryStats.avgLst === null || secondaryStats.avgLst === null
+      ? 'LST nu este disponibil pentru ambele selectii'
+      : Math.abs(temperatureDelta) < 0.3
+        ? `LST mediu este aproape egal (${secondaryStats.avgLst.toFixed(1)} fata de ${primaryStats.avgLst.toFixed(1)} °C)`
+        : `LST mediu in B este cu ${Math.abs(temperatureDelta).toFixed(1)} °C ${temperatureDelta > 0 ? 'mai mare' : 'mai mic'}`;
+    const vegetationReading = primaryStats.avgNdvi !== null && secondaryStats.avgNdvi !== null
+      ? `NDVI mediu in B este ${secondaryStats.avgNdvi.toFixed(3)} fata de ${primaryStats.avgNdvi.toFixed(3)} in A`
+      : 'NDVI nu este disponibil pentru ambele selectii';
+    const coverReading = primaryBuilt !== null && secondaryBuilt !== null
+      ? `Suprafetele construite reprezinta ${secondaryBuilt.toFixed(1)}% in B fata de ${primaryBuilt.toFixed(1)}% in A`
+      : 'Land Cover nu este disponibil pentru ambele selectii';
+    const comparisonReading = `${coverReading}. ${vegetationReading}; ${temperatureReading}.`;
+    const projectReading = secondaryBuilt !== null && secondaryBuilt >= 70
+      ? `In ${sectorLabel(secondarySector)}, verifica daca parcela are loc pentru arbori si sol permeabil. Daca spatiul este limitat, studiaza un acoperis verde doar daca structura permite si umbreste accesul pietonal.`
+      : temperatureDelta !== null && temperatureDelta > 0.3
+        ? `In ${sectorLabel(secondarySector)}, localizeaza zonele cele mai calde si prioritizeaza umbra, arborii si reducerea pavajului expus.`
+        : `In ${sectorLabel(secondarySector)}, pastreaza arborii si solul permeabil de pe amplasament; verifica harta hotspoturilor inainte de proiectare.`;
+    const historicalSectorComparison = request.type === 'sector' && request.primaryYear < (YEARS.at(-1) ?? 2025);
+    const timeline = request.type === 'year' ? YEARS.map((year) => {
+      const area = statisticsFor(request.primarySector, year, request.season);
+      const city = statisticsFor('all', year, request.season);
+      const cover = landCoverFor(request.primarySector, year);
+      return {
+        year,
+        lst: area.avgLst,
+        ndvi: area.avgNdvi,
+        lstVsCity: area.avgLst !== null && city.avgLst !== null ? Number((area.avgLst - city.avgLst).toFixed(2)) : null,
+        ndviVsCity: area.avgNdvi !== null && city.avgNdvi !== null ? Number((area.avgNdvi - city.avgNdvi).toFixed(3)) : null,
+        builtPct: cover.find((entry) => entry.categoryId === 'built-up')?.percentage ?? null,
+        treesPct: cover.find((entry) => entry.categoryId === 'trees')?.percentage ?? null,
+      };
+    }) : [];
 
     return {
       type: request.type,
       layer: request.layer,
-      title: request.type === 'sector' ? `${sectorLabel(request.primarySector)} vs ${sectorLabel(secondarySector)}` : `${sectorLabel(request.primarySector)} · ${request.primaryYear} vs ${secondaryYear}`,
-      context: `${request.layer.toUpperCase()} comparison using summer preview datasets.`,
+      title: request.type === 'sector' ? `${sectorLabel(request.primarySector)} fata de ${sectorLabel(secondarySector)}` : `${sectorLabel(request.primarySector)} · ${request.primaryYear} fata de ${secondaryYear}`,
+      context: `Comparatie ${request.layer.toUpperCase()} folosind date demonstrative de vara.`,
       primary: { label: primaryLabel, sectorId: request.primarySector, year: request.primaryYear, season: request.season, statistics: primaryStats, landCover: primaryLandCover, mapLayer: layerFor(request.layer, request.primarySector, request.primaryYear, request.season) },
       secondary: { label: secondaryLabel, sectorId: secondarySector, year: secondaryYear, season: request.season, statistics: secondaryStats, landCover: secondaryLandCover, mapLayer: layerFor(request.layer, secondarySector, secondaryYear, request.season) },
       metrics,
+      timeline,
       sharedLegend: LAYER_DESCRIPTORS[request.layer].legend,
       report: [
-        { title: 'Comparison summary', body: `${primaryLabel} is compared with ${secondaryLabel}.` },
-        { title: 'Key differences', body: keyMetric ? `${keyMetric.label} differs by ${keyMetric.delta > 0 ? '+' : ''}${keyMetric.delta} ${keyMetric.unit}.` : 'Comparable metrics are unavailable.' },
-        { title: 'Interpretation', body: 'Differences describe the selected preview datasets only and do not establish causality.' },
+        { title: request.type === 'year' ? 'Evolutia observata' : 'Ce spun datele impreuna', body: comparisonReading },
+        { title: request.type === 'year' ? 'Semnal pentru proiectele actuale' : historicalSectorComparison ? 'Cum folosesti acest reper' : 'Ce inseamna pentru proiect', body: request.type === 'year' ? `Pentru deciziile actuale, priveste anul ${YEARS.at(-1) ?? 2025} si verifica amplasamentul. Aceasta serie este demonstrativa si nu permite o prognoza.` : historicalSectorComparison ? `Aceasta comparatie descrie anul ${request.primaryYear}. Pentru un proiect nou, compara aceleasi sectoare in ${YEARS.at(-1) ?? 2025} si verifica daca diferenta persista.` : projectReading },
       ],
       isDemo: true,
     };

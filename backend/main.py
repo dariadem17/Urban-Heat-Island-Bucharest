@@ -9,9 +9,13 @@ from pydantic import BaseModel
 import numpy as np
 import matplotlib.pyplot as plt
 try:
-    from .assessment import assessment, relationship as raster_relationship, report_for, statistics as raster_statistics
+    from .assessment import assessment, relationship as raster_relationship, report_for, statistics as raster_statistics, timeline
+    from .land_cover import entries as land_cover_entries, record as land_cover_record
+    from .project_guidance import comparison_guidance
 except ImportError:
-    from assessment import assessment, relationship as raster_relationship, report_for, statistics as raster_statistics
+    from assessment import assessment, relationship as raster_relationship, report_for, statistics as raster_statistics, timeline
+    from land_cover import entries as land_cover_entries, record as land_cover_record
+    from project_guidance import comparison_guidance
 
 try:
     import rasterio
@@ -53,12 +57,6 @@ REAL_DATA = {
                 {"label": "> 0.6", "value": 10}
             ]
         },
-        "landCover": [
-            {"categoryId": "built-up", "label": "Buildings", "percentage": 54.2, "color": "#64748b"},
-            {"categoryId": "vegetation", "label": "Trees", "percentage": 31.5, "color": "#22c55e"},
-            {"categoryId": "bare-soil", "label": "Ground", "percentage": 9.8, "color": "#d97706"},
-            {"categoryId": "water", "label": "Water", "percentage": 4.5, "color": "#0284c7"}
-        ]
     }
     for yr in YEARS
 }
@@ -182,24 +180,6 @@ def process_all_geotiff():
                         pcts_ndvi = np.round((counts_ndvi / total_ndvi) * 100, 1)
 
 
-                        total_pixels = len(valid_pixels)
-                        if total_pixels > 0:
-                            water_cnt = int(np.sum(valid_pixels < 0.0))
-                            built_cnt = int(np.sum((valid_pixels >= 0.0) & (valid_pixels < 0.2)))
-                            soil_cnt = int(np.sum((valid_pixels >= 0.2) & (valid_pixels < 0.35)))
-                            veg_cnt = int(np.sum(valid_pixels >= 0.35))
-
-                            water_pct = round(float((water_cnt / total_pixels) * 100), 1)
-                            built_pct = round(float((built_cnt / total_pixels) * 100), 1)
-                            soil_pct = round(float((soil_cnt / total_pixels) * 100), 1)
-                            veg_pct = round(float((veg_cnt / total_pixels) * 100), 1)
-
-                            REAL_DATA[yr]["landCover"] = [
-                            {"categoryId": "built-up", "label": "Buildings", "percentage": built_pct, "color": "#64748b"},
-                            {"categoryId": "vegetation", "label": "Trees", "percentage": veg_pct, "color": "#22c55e"},
-                            {"categoryId": "bare-soil", "label": "Ground", "percentage": soil_pct, "color": "#d97706"},
-                            {"categoryId": "water", "label": "Water", "percentage": water_pct, "color": "#0284c7"}
-                            ]
                         REAL_DATA[yr]["ndvi"]["vegetatedPct"] = veg_pct
                         REAL_DATA[yr]["ndvi"]["distribution"] = [
                             {"label": "< 0.2", "value": int(pcts_ndvi[0])},
@@ -230,8 +210,8 @@ async def lifespan(app: FastAPI):
 
 
 app=FastAPI(
-    title="Urban Heat Island Bucharest API",
-    description="Backend API providing spatial and statistical data for Bucharest",
+    title="API - Insula de caldura urbana din Bucuresti",
+    description="Date spatiale si statistice pentru Bucuresti",
     version="1.0.0",
     lifespan=lifespan
 )
@@ -262,27 +242,27 @@ def get_availability():
                 "lst": "available" if raster_statistics("lst", yr, "all") else "unavailable",
                 "ndvi": "available" if raster_statistics("ndvi", yr, "all") else "unavailable"
             },
-            "landCover": "unavailable"
+            "landCover": "available" if land_cover_record(yr, "all") else "unavailable"
         })
     return response
 
 @router.get("/sectors")
 def get_sector():
     return [
-        {"id": "all", "name": "București", "label": "Bucharest"},
-        {"id": "1", "name": "Sector 1", "label": "Sector 1"},
-        {"id": "2", "name": "Sector 2", "label": "Sector 2"},
-        {"id": "3", "name": "Sector 3", "label": "Sector 3"},
-        {"id": "4", "name": "Sector 4", "label": "Sector 4"},
-        {"id": "5", "name": "Sector 5", "label": "Sector 5"},
-        {"id": "6", "name": "Sector 6", "label": "Sector 6"}
+        {"id": "all", "name": "Tot Bucurestiul", "label": "Tot Bucurestiul"},
+        {"id": "1", "name": "Sectorul 1", "label": "Sectorul 1"},
+        {"id": "2", "name": "Sectorul 2", "label": "Sectorul 2"},
+        {"id": "3", "name": "Sectorul 3", "label": "Sectorul 3"},
+        {"id": "4", "name": "Sectorul 4", "label": "Sectorul 4"},
+        {"id": "5", "name": "Sectorul 5", "label": "Sectorul 5"},
+        {"id": "6", "name": "Sectorul 6", "label": "Sectorul 6"}
     ]
 
 @router.get("/boundaries/sectors")
 def get_boundaries_sectors():
     path= "data/bucharest-sectors.geojson"
     if not os.path.exists(path):
-        raise HTTPException(status_code=404, detail="GeoJSON not available")
+        raise HTTPException(status_code=404, detail="Limitele GeoJSON nu sunt disponibile")
     with open(path,"r",encoding="utf-8") as f:
         data = json.load(f)
 
@@ -294,7 +274,7 @@ def get_boundaries_sectors():
         feature["properties"] = {
             **feature.get("properties", {}),
             "sectorId": "all",
-            "name": feature.get("properties", {}).get("name", "Bucharest"),
+            "name": feature.get("properties", {}).get("name", "Bucuresti"),
         }
         return {"type": "FeatureCollection", "features": [feature]}
 
@@ -314,9 +294,9 @@ def get_map_layer(layer_id: str, sector: str=Query("all"),year: int =Query(2025)
         max_v = yr_data["lst"]["max"]
         return {
             "id": "lst",
-            "name": "Land Surface Temperature",
+            "name": "Temperatura suprafetei (LST)",
             "unit": "°C",
-            "description": "Land Surface Temperature",
+            "description": "Temperatura suprafetei estimata din satelit",
             "year": year,
             "season": season,
             "sectorId": sector,
@@ -340,9 +320,9 @@ def get_map_layer(layer_id: str, sector: str=Query("all"),year: int =Query(2025)
     else:
         return {
             "id": "ndvi",
-            "name": "Normalized Difference Vegetation Index",
+            "name": "Indicele de vegetatie (NDVI)",
             "unit": "NDVI",
-            "description": "Normalized Difference Vegetation Index",
+            "description": "Indice spectral al vegetatiei",
             "year": year,
             "season": season,
             "sectorId": sector,
@@ -364,12 +344,12 @@ def get_map_layer(layer_id: str, sector: str=Query("all"),year: int =Query(2025)
             }
         }
 
-# Factori de ajustare realistă per sector față de media orașului
+# Factori de ajustare per sector fata de media orasului
 SECTOR_FACTORS = {
     "all":      {"temp": 0.0,  "ndvi": 0.00},
-    "1": {"temp": -1.3, "ndvi": 0.06},  # Mai răcoros, parcuri / Herăstrău
+    "1": {"temp": -1.3, "ndvi": 0.06},  # Mai racoros, parcuri / Herastrau
     "2": {"temp": 0.2,  "ndvi": -0.01},
-    "3": {"temp": 1.4,  "ndvi": -0.05},  # Zonă mai densă / insulă de căldură
+    "3": {"temp": 1.4,  "ndvi": -0.05},  # Zona mai densa / insula de caldura
     "4": {"temp": 0.7,  "ndvi": -0.02},
     "5": {"temp": 1.1,  "ndvi": -0.04},
     "6": {"temp": -0.5, "ndvi": 0.02},
@@ -384,7 +364,7 @@ def normalize_celsius(val: float) -> float:
 @router.get("/statistics")
 def get_statistics(sector: str = Query("all"), year: int = Query(2025), season: str = Query("summer")):
     if year not in YEARS or sector not in {"all", "1", "2", "3", "4", "5", "6"}:
-        raise HTTPException(status_code=404, detail="Dataset selection not found")
+        raise HTTPException(status_code=404, detail="Nu exista date pentru selectia ceruta")
     lst = raster_statistics("lst", year, sector)
     ndvi = raster_statistics("ndvi", year, sector)
     relationship = raster_relationship(year, sector)
@@ -397,7 +377,7 @@ def get_statistics(sector: str = Query("all"), year: int = Query(2025), season: 
         "minNdvi": ndvi["min"] if ndvi else None,
         "maxNdvi": ndvi["max"] if ndvi else None,
         "hotspotAreaPct": lst["hotspotPct"] if lst else None,
-        "hotspotDefinition": f"Share of valid LST pixels above Bucharest P90 ({lst['hotspotThresholdC']:.2f} °C) for {year}" if lst else None,
+        "hotspotDefinition": f"Procentul pixelilor LST valizi peste percentila 90 a Bucurestiului ({lst['hotspotThresholdC']:.2f} °C) pentru {year}" if lst else None,
         "vegetatedAreaPct": ndvi["vegetatedPct"] if ndvi else None,
         "lstDistribution": lst["distribution"] if lst else [],
         "ndviDistribution": ndvi["distribution"] if ndvi else [],
@@ -408,7 +388,7 @@ def get_statistics(sector: str = Query("all"), year: int = Query(2025), season: 
 
 @router.get("/statistics/land-cover")
 def get_land_cover(sector: str = Query("all"), year: int = Query(2025), season: str = Query("summer")):
-    return []  # No validated Land Cover data is bundled here.
+    return land_cover_entries(year, sector)
 
 class ComparisonReq(BaseModel):
     type: str
@@ -439,44 +419,58 @@ def post_comparison(req: ComparisonReq):
                  if s_stats["avgLst"] is not None and p_stats["avgLst"] is not None else None)
     delta_ndvi = (round(s_stats["avgNdvi"] - p_stats["avgNdvi"], 3)
                   if s_stats["avgNdvi"] is not None and p_stats["avgNdvi"] is not None else None)
+    p_cover = land_cover_entries(req.primaryYear, req.primarySector)
+    s_cover = land_cover_entries(sec_year, sec_sector)
     metrics = []
     if delta_lst is not None:
-        metrics.append({"id": "avg-lst", "label": "Average LST", "primary": p_stats["avgLst"],
+        metrics.append({"id": "avg-lst", "label": "LST mediu", "primary": p_stats["avgLst"],
                         "secondary": s_stats["avgLst"], "delta": delta_lst, "unit": "°C"})
     if delta_ndvi is not None:
-        metrics.append({"id": "avg-ndvi", "label": "Average NDVI", "primary": p_stats["avgNdvi"],
+        metrics.append({"id": "avg-ndvi", "label": "NDVI mediu", "primary": p_stats["avgNdvi"],
                         "secondary": s_stats["avgNdvi"], "delta": delta_ndvi, "unit": "NDVI"})
-    report = [
-        {"title": "Comparison scope", "body": f"{req.primarySector} ({req.primaryYear}) compared with {sec_sector} ({sec_year}); both selections use summer raster statistics."},
-        {"title": "Surface temperature", "body": f"The second selection differs by {delta_lst:+.2f} °C in mean LST." if delta_lst is not None else "Mean LST is unavailable for one or both selections."},
-        {"title": "Vegetation signal", "body": f"The second selection differs by {delta_ndvi:+.3f} in mean NDVI." if delta_ndvi is not None else "Mean NDVI is unavailable for one or both selections."},
-        {"title": "Interpretation", "body": "Differences describe satellite-derived surface measurements; they do not establish cause or a long-term trend. Land Cover is unavailable."},
-    ]
+    if p_stats["hotspotAreaPct"] is not None and s_stats["hotspotAreaPct"] is not None:
+        metrics.append({"id": "hotspot", "label": "Suprafata foarte calda",
+                        "primary": p_stats["hotspotAreaPct"], "secondary": s_stats["hotspotAreaPct"],
+                        "delta": round(s_stats["hotspotAreaPct"] - p_stats["hotspotAreaPct"], 1),
+                        "unit": "percentage points"})
+    for category_id, label in (("built-up", "Suprafete construite"), ("trees", "Arbori")):
+        p_share = next((entry["percentage"] for entry in p_cover if entry["categoryId"] == category_id), None)
+        s_share = next((entry["percentage"] for entry in s_cover if entry["categoryId"] == category_id), None)
+        if p_share is not None and s_share is not None:
+            metrics.append({"id": category_id, "label": label, "primary": p_share,
+                            "secondary": s_share, "delta": round(s_share - p_share, 1), "unit": "percentage points"})
+    primary_name = "Bucuresti" if req.primarySector == "all" else f"Sectorul {req.primarySector}"
+    secondary_name = "Bucuresti" if sec_sector == "all" else f"Sectorul {sec_sector}"
+    series = timeline(req.primarySector) if req.type == "year" else []
+    report, comparison_note = comparison_guidance(req.type, p_stats, s_stats, p_cover, s_cover, series)
 
     return {
         "type": req.type,
         "layer": req.layer,
-        "title": f"Comparison {req.primarySector} vs {sec_sector}",
-        "context": f"Satellite comparison {req.layer.upper()} for Bucharest",
+        "title": (f"{primary_name}: {min(req.primaryYear, sec_year)} - {max(req.primaryYear, sec_year)}"
+                  if req.type == "year" else f"{primary_name} fata de {secondary_name}"),
+        "context": ("LST si NDVI: date de vara. Land cover: clasificare anuala. " if p_cover and s_cover else
+                    "LST si NDVI: date de vara. Land cover lipseste pentru cel putin o selectie. ") + comparison_note,
         "primary": {
-            "label": f"Sector {req.primarySector} · {req.primaryYear}",
+            "label": f"{primary_name} · {req.primaryYear}",
             "sectorId": req.primarySector,
             "year": req.primaryYear,
             "season": req.season,
             "statistics": p_stats,
-            "landCover": get_land_cover(req.primarySector, req.primaryYear, req.season),
+            "landCover": p_cover,
             "mapLayer": p_layer
         },
         "secondary": {
-            "label": f"Sector {sec_sector} · {sec_year}",
+            "label": f"{secondary_name} · {sec_year}",
             "sectorId": sec_sector,
             "year": sec_year,
             "season": req.season,
             "statistics": s_stats,
-            "landCover": get_land_cover(sec_sector, sec_year, req.season),
+            "landCover": s_cover,
             "mapLayer": s_layer
         },
         "metrics": metrics,
+        "timeline": series,
         "sharedLegend": p_layer["legend"],
         "report": report,
         "isDemo": False
@@ -486,14 +480,14 @@ def post_comparison(req: ComparisonReq):
 def get_assessment(year: int, area_code: str):
     sector = "all" if area_code in {"bucharest", "all"} else area_code.removeprefix("sector_")
     if year not in YEARS or sector not in {"all", "1", "2", "3", "4", "5", "6"}:
-        raise HTTPException(status_code=404, detail="Assessment selection not found")
+        raise HTTPException(status_code=404, detail="Nu exista evaluare pentru selectia ceruta")
     return assessment(year, sector)
 
 @router.post("/reports/explore")
 def post_report(req: ReportReq):
     if req.year not in YEARS or req.sectorId not in {"all", "1", "2", "3", "4", "5", "6"}:
-        raise HTTPException(status_code=404, detail="Report selection not found")
-    return report_for(assessment(req.year, req.sectorId))
+        raise HTTPException(status_code=404, detail="Nu exista raport pentru selectia ceruta")
+    return report_for(assessment(req.year, req.sectorId), timeline(req.sectorId))
 
 
 app.include_router(router,prefix="/api")

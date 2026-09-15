@@ -27,20 +27,20 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       headers: { 'Content-Type': 'application/json', ...init?.headers },
     });
   } catch {
-    throw new DataServiceError('backend-unavailable', 'The data service could not be reached.');
+    throw new DataServiceError('backend-unavailable', 'Serviciul de date nu poate fi accesat.');
   }
 
   if (response.status === 404) {
-    throw new DataServiceError('not-found', 'No matching dataset is available.');
+    throw new DataServiceError('not-found', 'Nu exista date pentru aceasta selectie.');
   }
   if (!response.ok) {
-    throw new DataServiceError('backend-unavailable', 'The data service returned an unsuccessful response.');
+    throw new DataServiceError('backend-unavailable', 'Serviciul de date a returnat o eroare.');
   }
 
   try {
     return await response.json() as T;
   } catch {
-    throw new DataServiceError('invalid-response', 'The data service response could not be read.');
+    throw new DataServiceError('invalid-response', 'Raspunsul serviciului de date nu poate fi citit.');
   }
 }
 

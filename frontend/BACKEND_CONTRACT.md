@@ -102,11 +102,11 @@ Every metric may be `null` when unavailable; arrays may be empty. Distribution `
 
 ```json
 [
-  { "categoryId": "built-up", "label": "Built-up", "percentage": 52.1, "color": "#64748b" }
+  { "categoryId": "built-up", "label": "Suprafete construite", "percentage": 79.8, "color": "#ef6b4a", "sourceYear": 2025, "period": "anual", "sourceName": "Esri / Impact Observatory / Microsoft Sentinel-2 10m Land Cover", "sourceUrl": "https://livingatlas.arcgis.com/landcover/" }
 ]
 ```
 
-Categories are dynamic; the frontend does not assume a fixed count. Percentages should total approximately 100% after nodata handling and rounding. Please document the classifier, category definitions, and accuracy/validation information.
+Categories are dynamic; the frontend does not assume a fixed count. Percentages should total approximately 100% after nodata handling and rounding. The current API serves annual source-backed summaries for 2018, 2020, 2023 and 2025; 2015 returns an empty array. The classification period differs from the summer LST/NDVI period. The built-up class includes roads and does not measure a parcel or planning eligibility.
 
 ## G. Comparison
 

@@ -2,13 +2,13 @@ import type { DataLayer, LandCoverEntry, MapLayerDescriptor, RegionSector, Secto
 
 export const YEARS: Year[] = [2020, 2021, 2022, 2023, 2024, 2025];
 export const SECTORS: RegionSector[] = [
-  { id: 'all', name: 'All Bucharest', label: 'All Bucharest', center: [26.1025, 44.4268] },
-  { id: '1', name: 'Sector 1', label: 'Sector 1', center: [26.04, 44.49] },
-  { id: '2', name: 'Sector 2', label: 'Sector 2', center: [26.13, 44.47] },
-  { id: '3', name: 'Sector 3', label: 'Sector 3', center: [26.17, 44.42] },
-  { id: '4', name: 'Sector 4', label: 'Sector 4', center: [26.11, 44.37] },
-  { id: '5', name: 'Sector 5', label: 'Sector 5', center: [26.04, 44.39] },
-  { id: '6', name: 'Sector 6', label: 'Sector 6', center: [26.0, 44.44] },
+  { id: 'all', name: 'Tot Bucurestiul', label: 'Tot Bucurestiul', center: [26.1025, 44.4268] },
+  { id: '1', name: 'Sectorul 1', label: 'Sectorul 1', center: [26.04, 44.49] },
+  { id: '2', name: 'Sectorul 2', label: 'Sectorul 2', center: [26.13, 44.47] },
+  { id: '3', name: 'Sectorul 3', label: 'Sectorul 3', center: [26.17, 44.42] },
+  { id: '4', name: 'Sectorul 4', label: 'Sectorul 4', center: [26.11, 44.37] },
+  { id: '5', name: 'Sectorul 5', label: 'Sectorul 5', center: [26.04, 44.39] },
+  { id: '6', name: 'Sectorul 6', label: 'Sectorul 6', center: [26.0, 44.44] },
 ];
 
 export const LAYER_DESCRIPTORS: Record<
@@ -17,44 +17,44 @@ export const LAYER_DESCRIPTORS: Record<
 > = {
   lst: {
     id: 'lst',
-    name: 'Land Surface Temperature',
+    name: 'Temperatura suprafetei (LST)',
     unit: '°C',
-    description: 'Satellite-derived surface temperature, not ambient air temperature.',
+    description: 'Temperatura suprafetei estimata din satelit, nu temperatura aerului.',
     legend: {
       kind: 'continuous',
-      note: 'Preview scale — production thresholds must come from dataset metadata.',
+      note: 'Scara demonstrativa; pragurile finale trebuie documentate in metadate.',
       items: [
-        { label: 'Lower surface temperature', color: '#60a5fa' },
-        { label: 'Moderate surface temperature', color: '#facc15' },
-        { label: 'Higher surface temperature', color: '#f97316' },
-        { label: 'Highest preview band', color: '#ef4444' },
+        { label: 'Temperatura mai mica', color: '#60a5fa' },
+        { label: 'Temperatura moderata', color: '#facc15' },
+        { label: 'Temperatura mai mare', color: '#f97316' },
+        { label: 'Temperatura maxima din scara', color: '#ef4444' },
       ],
     },
   },
   ndvi: {
     id: 'ndvi',
-    name: 'Normalized Difference Vegetation Index',
+    name: 'Indicele de vegetatie (NDVI)',
     unit: 'NDVI',
-    description: 'Spectral-reflectance indicator used to characterize vegetation signal.',
+    description: 'Indice spectral care indica prezenta vegetatiei.',
     legend: {
       kind: 'continuous',
-      note: 'Preview scale — production thresholds must come from dataset metadata.',
+      note: 'Scara demonstrativa; pragurile finale trebuie documentate in metadate.',
       items: [
-        { label: 'Lower vegetation signal', color: '#fef3c7' },
-        { label: 'Moderate vegetation signal', color: '#84cc16' },
-        { label: 'Higher vegetation signal', color: '#4ade80' },
-        { label: 'Highest preview band', color: '#166534' },
+        { label: 'Semnal slab de vegetatie', color: '#fef3c7' },
+        { label: 'Semnal moderat de vegetatie', color: '#84cc16' },
+        { label: 'Semnal puternic de vegetatie', color: '#4ade80' },
+        { label: 'Semnal maxim din scara', color: '#166534' },
       ],
     },
   },
 };
 
 const landCover = (built: number, vegetation: number, green: number, water: number): LandCoverEntry[] => [
-  { categoryId: 'built-up', label: 'Built-up', percentage: built, color: '#64748b' },
-  { categoryId: 'vegetation', label: 'Vegetation', percentage: vegetation, color: '#22c55e' },
-  { categoryId: 'urban-green', label: 'Parks / urban green space', percentage: green, color: '#84cc16' },
-  { categoryId: 'water', label: 'Water', percentage: water, color: '#38bdf8' },
-  { categoryId: 'other', label: 'Bare soil / other', percentage: 100 - built - vegetation - green - water, color: '#d6b36e' },
+  { categoryId: 'built-up', label: 'Zone construite', percentage: built, color: '#64748b' },
+  { categoryId: 'vegetation', label: 'Vegetatie', percentage: vegetation, color: '#22c55e' },
+  { categoryId: 'urban-green', label: 'Parcuri / spatii verzi', percentage: green, color: '#84cc16' },
+  { categoryId: 'water', label: 'Apa', percentage: water, color: '#38bdf8' },
+  { categoryId: 'other', label: 'Sol descoperit / altele', percentage: 100 - built - vegetation - green - water, color: '#d6b36e' },
 ];
 
 export const MOCK_LAND_COVER: Record<SectorId, LandCoverEntry[]> = {

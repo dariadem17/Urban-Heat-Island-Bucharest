@@ -55,8 +55,6 @@ const BASEMAP_STYLE: maplibregl.StyleSpecification = {
 
 const BOUNDARY_SOURCE = 'bucharest-sector-boundaries';
 const BOUNDARY_FILL = 'bucharest-sector-fill';
-const BOUNDARY_LINE = 'bucharest-sector-line';
-const SELECTED_BOUNDARY_LINE = 'bucharest-selected-sector-line';
 const OVERLAY_SOURCE = 'scientific-overlay-source';
 const OVERLAY_LAYER = 'scientific-overlay-layer';
 
@@ -98,13 +96,26 @@ function getGeoJsonBounds(boundaries: SectorBoundaryCollection, selectedSector: 
   return bounds.isEmpty() ? null : bounds;
 }
 
+function projectedBoundaryPath(map: maplibregl.Map, feature: SectorBoundaryCollection['features'][number]) {
+  const polygons = feature.geometry.type === 'Polygon'
+    ? [feature.geometry.coordinates as number[][][]]
+    : feature.geometry.coordinates as number[][][][];
+  return polygons.flatMap((polygon) => polygon.map((ring) => {
+    const points = ring.map(([lon, lat], index) => {
+      const point = map.project([lon, lat]);
+      return `${index === 0 ? 'M' : 'L'}${point.x.toFixed(1)},${point.y.toFixed(1)}`;
+    });
+    return `${points.join(' ')} Z`;
+  })).join(' ');
+}
+
 function removeScientificOverlay(map: maplibregl.Map) {
   if (map.getLayer(OVERLAY_LAYER)) map.removeLayer(OVERLAY_LAYER);
   if (map.getSource(OVERLAY_SOURCE)) map.removeSource(OVERLAY_SOURCE);
 }
 
 export function MapPanel({
-  eyebrow = 'Map view',
+  eyebrow = 'Harta',
   selectedSector,
   selectedLayer,
   selectedYear,
@@ -119,6 +130,7 @@ export function MapPanel({
   dataMode,
 }: MapPanelProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const boundarySvgRef = useRef<SVGSVGElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const styleReadyRef = useRef(false);
   const [styleRevision, setStyleRevision] = useState(0);
@@ -186,29 +198,8 @@ export function MapPanel({
         type: 'fill',
         source: BOUNDARY_SOURCE,
         paint: {
-          'fill-color': ['case', ['==', ['get', 'sectorId'], selectedSector], '#34d399', '#0f766e'],
-          'fill-opacity': ['case', ['==', ['get', 'sectorId'], selectedSector], 0.28, 0.08],
-        },
-      });
-      map.addLayer({
-        id: BOUNDARY_LINE,
-        type: 'line',
-        source: BOUNDARY_SOURCE,
-        paint: {
-          'line-color': '#5eead4',
-          'line-width': 1.25,
-          'line-opacity': 0.78,
-        },
-      });
-      map.addLayer({
-        id: SELECTED_BOUNDARY_LINE,
-        type: 'line',
-        source: BOUNDARY_SOURCE,
-        filter: selectedSector === 'all' ? ['==', ['get', 'sectorId'], ''] : ['==', ['get', 'sectorId'], selectedSector],
-        paint: {
-          'line-color': '#f8fafc',
-          'line-width': 3,
-          'line-opacity': 0.98,
+          'fill-color': '#f8fafc',
+          'fill-opacity': ['case', ['==', ['get', 'sectorId'], selectedSector], 0.07, 0],
         },
       });
       map.on('click', BOUNDARY_FILL, (event) => {
@@ -227,11 +218,7 @@ export function MapPanel({
     if (!map || !styleReadyRef.current) return;
     const updateSelection = () => {
       if (map.getLayer(BOUNDARY_FILL)) {
-        map.setPaintProperty(BOUNDARY_FILL, 'fill-color', ['case', ['==', ['get', 'sectorId'], selectedSector], '#34d399', '#0f766e']);
-        map.setPaintProperty(BOUNDARY_FILL, 'fill-opacity', ['case', ['==', ['get', 'sectorId'], selectedSector], 0.28, 0.08]);
-        if (map.getLayer(SELECTED_BOUNDARY_LINE)) {
-          map.setFilter(SELECTED_BOUNDARY_LINE, selectedSector === 'all' ? ['==', ['get', 'sectorId'], ''] : ['==', ['get', 'sectorId'], selectedSector]);
-        }
+        map.setPaintProperty(BOUNDARY_FILL, 'fill-opacity', ['case', ['==', ['get', 'sectorId'], selectedSector], 0.07, 0]);
       }
 
       const geographicBounds = boundaries ? getGeoJsonBounds(boundaries, selectedSector) : null;
@@ -255,6 +242,55 @@ export function MapPanel({
     // loading. Waiting on `load` here can deadlock after the initial map load.
     updateSelection();
   }, [boundaries, sectors, selectedSector, styleRevision]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    const svg = boundarySvgRef.current;
+    if (!map || !svg) return;
+    svg.replaceChildren();
+    if (!boundaries || !styleReadyRef.current) return;
+
+    const orderedFeatures = [...boundaries.features].sort((a, b) =>
+      Number(a.properties.sectorId === selectedSector) - Number(b.properties.sectorId === selectedSector));
+    const paths = orderedFeatures.map((feature) => {
+      const selected = feature.properties.sectorId === selectedSector;
+      const makePath = (color: string, width: number) => {
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('fill', 'none');
+        path.setAttribute('stroke', color);
+        path.setAttribute('stroke-width', String(width));
+        path.setAttribute('stroke-linejoin', 'round');
+        path.setAttribute('stroke-linecap', 'round');
+        return path;
+      };
+      const halo = makePath('#07131f', selected ? 9 : 5);
+      const line = makePath(selected ? '#f8fafc' : '#cbd5e1', selected ? 4 : 2);
+      svg.append(halo, line);
+      return { feature, halo, line };
+    });
+
+    let frame = 0;
+    const draw = () => {
+      frame = 0;
+      for (const { feature, halo, line } of paths) {
+        const geometry = projectedBoundaryPath(map, feature);
+        halo.setAttribute('d', geometry);
+        line.setAttribute('d', geometry);
+      }
+    };
+    const scheduleDraw = () => {
+      if (!frame) frame = requestAnimationFrame(draw);
+    };
+    draw();
+    map.on('move', scheduleDraw);
+    map.on('resize', scheduleDraw);
+    return () => {
+      map.off('move', scheduleDraw);
+      map.off('resize', scheduleDraw);
+      if (frame) cancelAnimationFrame(frame);
+      svg.replaceChildren();
+    };
+  }, [boundaries, selectedSector, styleRevision]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -331,7 +367,7 @@ export function MapPanel({
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 bg-slate-900/80 px-4 py-3">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-400">{eyebrow}</p>
-          <h2 className="mt-1 text-base font-semibold text-slate-50">{selectedSectorMeta?.name ?? 'All Bucharest'}</h2>
+          <h2 className="mt-1 text-base font-semibold text-slate-50">{selectedSectorMeta?.name ?? 'Tot Bucurestiul'}</h2>
         </div>
         <div className="flex items-center gap-2 rounded-full border border-slate-700 bg-slate-800 px-2.5 py-1 text-[11px] text-slate-300">
           <span className={`h-2 w-2 rounded-full ${hasRenderableOverlay ? 'bg-emerald-400' : 'bg-amber-300'}`} />
@@ -340,7 +376,8 @@ export function MapPanel({
       </div>
 
       <div className="relative min-w-0">
-        <div ref={containerRef} className="h-[440px] w-full sm:h-[520px]" role="application" tabIndex={0} aria-label="Interactive map of Bucharest. Use arrow keys to pan and plus or minus to zoom." />
+        <div ref={containerRef} className="h-[440px] w-full sm:h-[520px]" role="application" tabIndex={0} aria-label="Harta interactiva a Bucurestiului. Foloseste sagetile pentru deplasare si tastele plus sau minus pentru zoom." />
+        <svg ref={boundarySvgRef} className="pointer-events-none absolute inset-0 h-full w-full overflow-hidden" aria-hidden="true" />
 
         {layerDescriptor ? <MapLegend descriptor={layerDescriptor} /> : null}
 
@@ -356,9 +393,10 @@ export function MapPanel({
         <div className="pointer-events-none absolute bottom-3 right-3 rounded-xl border border-slate-700 bg-slate-950/90 px-2.5 py-2 text-[10px] text-slate-300 shadow-lg">
           <div className="flex items-center gap-2">
             <span className={`h-2 w-2 rounded-full ${boundaries ? 'bg-emerald-400' : 'bg-slate-500'}`} />
-            {boundariesLoading ? 'Loading boundaries' : boundaries ? 'Sector boundaries loaded' : 'Basemap only'}
+            {boundariesLoading ? 'Se incarca limitele' : boundaries ? 'Contururi: limitele sectoarelor' : 'Doar harta de baza'}
           </div>
-          <div className="mt-1 text-slate-400">Layer opacity {opacity}%</div>
+          {boundaries && selectedSector !== 'all' ? <div className="mt-1 text-slate-300">Contur alb: sectorul selectat</div> : null}
+          <div className="mt-1 text-slate-400">Opacitatea stratului {opacity}%</div>
         </div>
       </div>
     </section>
@@ -376,11 +414,11 @@ type MapStateProps = {
 
 function MapState({ loading, error, unavailable, unsupported, empty, demo }: MapStateProps) {
   let content: { icon: typeof MapIcon; title: string; detail: string } | null = null;
-  if (loading) content = { icon: LoaderCircle, title: 'Loading layer', detail: 'Requesting layer metadata…' };
-  else if (error) content = { icon: DatabaseZap, title: 'Layer service unavailable', detail: 'The basemap remains available. Try again when the data service is online.' };
-  else if (unavailable) content = { icon: AlertTriangle, title: 'Layer unavailable', detail: 'No dataset exists for this layer and year combination.' };
-  else if (unsupported) content = { icon: AlertTriangle, title: 'GeoTIFF conversion required', detail: 'Provide a web raster or tile endpoint for browser display.' };
-  else if (empty) content = { icon: MapIcon, title: demo ? 'Scientific overlay awaiting processed data' : 'Scientific overlay unavailable', detail: demo ? 'Demo dataset · interactive basemap remains available' : 'A validated raster image or tile source has not been connected for this selection.' };
+  if (loading) content = { icon: LoaderCircle, title: 'Se incarca stratul', detail: 'Se solicita informatiile stratului...' };
+  else if (error) content = { icon: DatabaseZap, title: 'Serviciul de date nu este disponibil', detail: 'Harta de baza ramane vizibila. Incearca din nou cand API-ul functioneaza.' };
+  else if (unavailable) content = { icon: AlertTriangle, title: 'Strat indisponibil', detail: 'Nu exista date pentru acest strat si acest an.' };
+  else if (unsupported) content = { icon: AlertTriangle, title: 'Este necesara conversia GeoTIFF', detail: 'Pentru afisare in browser este nevoie de un raster web sau de tile-uri.' };
+  else if (empty) content = { icon: MapIcon, title: demo ? 'Stratul demonstrativ asteapta date procesate' : 'Stratul de date nu este disponibil', detail: demo ? 'Date demonstrative; harta de baza ramane interactiva' : 'Pentru aceasta selectie nu este conectata o imagine raster valida.' };
 
   if (!content) return null;
   const Icon = content.icon;

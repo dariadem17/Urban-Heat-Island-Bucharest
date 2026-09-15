@@ -1,0 +1,1474 @@
+{
+  "dataset": "Esri / Impact Observatory / Microsoft Sentinel-2 10m Land Cover",
+  "sourceUrl": "https://livingatlas.arcgis.com/landcover/",
+  "serviceUrl": "https://ic.imagery1.arcgis.com/arcgis/rest/services/Sentinel2_10m_LandCover/ImageServer",
+  "license": "CC BY 4.0",
+  "period": "anual",
+  "method": "Exportul rasterului anual la 10 m cu ID-ul anului blocat in serviciul Esri; numararea pixelilor clasificati in limitele GeoJSON ale sectoarelor. Norii si codurile necunoscute sunt exclusi din procente.",
+  "limitations": "Suprafetele construite includ si drumuri. Datele sunt anuale, nu medii ale verii; nu indica situatia unei parcele sau drepturile de construire.",
+  "boundarySource": "OpenStreetMap/Nominatim; backend/data/bucharest-sectors.geojson",
+  "years": {
+    "2018": {
+      "sha256": "cad95d2014280256687b4163563c374ea241b788e0c54cfc75d1787b86da9e06",
+      "areas": {
+        "all": {
+          "entries": [
+            {
+              "categoryId": "built-up",
+              "label": "Suprafete construite",
+              "percentage": 77.8,
+              "color": "#ef6b4a",
+              "pixels": 3650018
+            },
+            {
+              "categoryId": "trees",
+              "label": "Arbori",
+              "percentage": 4.1,
+              "color": "#16a34a",
+              "pixels": 194390
+            },
+            {
+              "categoryId": "low-vegetation",
+              "label": "Vegetatie joasa",
+              "percentage": 10.0,
+              "color": "#84cc16",
+              "pixels": 468447
+            },
+            {
+              "categoryId": "crops",
+              "label": "Culturi",
+              "percentage": 4.3,
+              "color": "#eab308",
+              "pixels": 201879
+            },
+            {
+              "categoryId": "water",
+              "label": "Apa",
+              "percentage": 3.3,
+              "color": "#38bdf8",
+              "pixels": 156384
+            },
+            {
+              "categoryId": "bare-soil",
+              "label": "Sol gol",
+              "percentage": 0.0,
+              "color": "#a78bfa",
+              "pixels": 2325
+            },
+            {
+              "categoryId": "other",
+              "label": "Alta acoperire",
+              "percentage": 0.4,
+              "color": "#94a3b8",
+              "pixels": 16739
+            }
+          ],
+          "validPixels": 4690182,
+          "excludedPixels": 0,
+          "coveragePct": 100.0
+        },
+        "1": {
+          "entries": [
+            {
+              "categoryId": "built-up",
+              "label": "Suprafete construite",
+              "percentage": 67.0,
+              "color": "#ef6b4a",
+              "pixels": 921433
+            },
+            {
+              "categoryId": "trees",
+              "label": "Arbori",
+              "percentage": 10.9,
+              "color": "#16a34a",
+              "pixels": 150663
+            },
+            {
+              "categoryId": "low-vegetation",
+              "label": "Vegetatie joasa",
+              "percentage": 16.5,
+              "color": "#84cc16",
+              "pixels": 226416
+            },
+            {
+              "categoryId": "crops",
+              "label": "Culturi",
+              "percentage": 1.5,
+              "color": "#eab308",
+              "pixels": 20351
+            },
+            {
+              "categoryId": "water",
+              "label": "Apa",
+              "percentage": 4.0,
+              "color": "#38bdf8",
+              "pixels": 54431
+            },
+            {
+              "categoryId": "bare-soil",
+              "label": "Sol gol",
+              "percentage": 0.2,
+              "color": "#a78bfa",
+              "pixels": 2285
+            },
+            {
+              "categoryId": "other",
+              "label": "Alta acoperire",
+              "percentage": 0.0,
+              "color": "#94a3b8",
+              "pixels": 448
+            }
+          ],
+          "validPixels": 1376027,
+          "excludedPixels": 0,
+          "coveragePct": 100.0
+        },
+        "2": {
+          "entries": [
+            {
+              "categoryId": "built-up",
+              "label": "Suprafete construite",
+              "percentage": 88.8,
+              "color": "#ef6b4a",
+              "pixels": 554132
+            },
+            {
+              "categoryId": "trees",
+              "label": "Arbori",
+              "percentage": 0.8,
+              "color": "#16a34a",
+              "pixels": 5263
+            },
+            {
+              "categoryId": "low-vegetation",
+              "label": "Vegetatie joasa",
+              "percentage": 1.9,
+              "color": "#84cc16",
+              "pixels": 11693
+            },
+            {
+              "categoryId": "crops",
+              "label": "Culturi",
+              "percentage": 2.2,
+              "color": "#eab308",
+              "pixels": 13873
+            },
+            {
+              "categoryId": "water",
+              "label": "Apa",
+              "percentage": 6.1,
+              "color": "#38bdf8",
+              "pixels": 38382
+            },
+            {
+              "categoryId": "bare-soil",
+              "label": "Sol gol",
+              "percentage": 0.0,
+              "color": "#a78bfa",
+              "pixels": 17
+            },
+            {
+              "categoryId": "other",
+              "label": "Alta acoperire",
+              "percentage": 0.1,
+              "color": "#94a3b8",
+              "pixels": 918
+            }
+          ],
+          "validPixels": 624278,
+          "excludedPixels": 0,
+          "coveragePct": 100.0
+        },
+        "3": {
+          "entries": [
+            {
+              "categoryId": "built-up",
+              "label": "Suprafete construite",
+              "percentage": 88.9,
+              "color": "#ef6b4a",
+              "pixels": 594511
+            },
+            {
+              "categoryId": "trees",
+              "label": "Arbori",
+              "percentage": 0.6,
+              "color": "#16a34a",
+              "pixels": 3827
+            },
+            {
+              "categoryId": "low-vegetation",
+              "label": "Vegetatie joasa",
+              "percentage": 5.4,
+              "color": "#84cc16",
+              "pixels": 35762
+            },
+            {
+              "categoryId": "crops",
+              "label": "Culturi",
+              "percentage": 3.9,
+              "color": "#eab308",
+              "pixels": 26320
+            },
+            {
+              "categoryId": "water",
+              "label": "Apa",
+              "percentage": 1.2,
+              "color": "#38bdf8",
+              "pixels": 7954
+            }
+          ],
+          "validPixels": 668374,
+          "excludedPixels": 0,
+          "coveragePct": 100.0
+        },
+        "4": {
+          "entries": [
+            {
+              "categoryId": "built-up",
+              "label": "Suprafete construite",
+              "percentage": 78.0,
+              "color": "#ef6b4a",
+              "pixels": 505916
+            },
+            {
+              "categoryId": "trees",
+              "label": "Arbori",
+              "percentage": 0.9,
+              "color": "#16a34a",
+              "pixels": 6118
+            },
+            {
+              "categoryId": "low-vegetation",
+              "label": "Vegetatie joasa",
+              "percentage": 4.7,
+              "color": "#84cc16",
+              "pixels": 30687
+            },
+            {
+              "categoryId": "crops",
+              "label": "Culturi",
+              "percentage": 13.4,
+              "color": "#eab308",
+              "pixels": 86799
+            },
+            {
+              "categoryId": "water",
+              "label": "Apa",
+              "percentage": 0.6,
+              "color": "#38bdf8",
+              "pixels": 3824
+            },
+            {
+              "categoryId": "bare-soil",
+              "label": "Sol gol",
+              "percentage": 0.0,
+              "color": "#a78bfa",
+              "pixels": 23
+            },
+            {
+              "categoryId": "other",
+              "label": "Alta acoperire",
+              "percentage": 2.4,
+              "color": "#94a3b8",
+              "pixels": 15270
+            }
+          ],
+          "validPixels": 648637,
+          "excludedPixels": 0,
+          "coveragePct": 100.0
+        },
+        "5": {
+          "entries": [
+            {
+              "categoryId": "built-up",
+              "label": "Suprafete construite",
+              "percentage": 83.6,
+              "color": "#ef6b4a",
+              "pixels": 472345
+            },
+            {
+              "categoryId": "trees",
+              "label": "Arbori",
+              "percentage": 0.3,
+              "color": "#16a34a",
+              "pixels": 1418
+            },
+            {
+              "categoryId": "low-vegetation",
+              "label": "Vegetatie joasa",
+              "percentage": 12.8,
+              "color": "#84cc16",
+              "pixels": 72307
+            },
+            {
+              "categoryId": "crops",
+              "label": "Culturi",
+              "percentage": 3.4,
+              "color": "#eab308",
+              "pixels": 18952
+            }
+          ],
+          "validPixels": 565022,
+          "excludedPixels": 0,
+          "coveragePct": 100.0
+        },
+        "6": {
+          "entries": [
+            {
+              "categoryId": "built-up",
+              "label": "Suprafete construite",
+              "percentage": 74.5,
+              "color": "#ef6b4a",
+              "pixels": 601682
+            },
+            {
+              "categoryId": "trees",
+              "label": "Arbori",
+              "percentage": 3.4,
+              "color": "#16a34a",
+              "pixels": 27103
+            },
+            {
+              "categoryId": "low-vegetation",
+              "label": "Vegetatie joasa",
+              "percentage": 11.3,
+              "color": "#84cc16",
+              "pixels": 91582
+            },
+            {
+              "categoryId": "crops",
+              "label": "Culturi",
+              "percentage": 4.4,
+              "color": "#eab308",
+              "pixels": 35584
+            },
+            {
+              "categoryId": "water",
+              "label": "Apa",
+              "percentage": 6.4,
+              "color": "#38bdf8",
+              "pixels": 51793
+            },
+            {
+              "categoryId": "other",
+              "label": "Alta acoperire",
+              "percentage": 0.0,
+              "color": "#94a3b8",
+              "pixels": 103
+            }
+          ],
+          "validPixels": 807847,
+          "excludedPixels": 0,
+          "coveragePct": 100.0
+        }
+      }
+    },
+    "2020": {
+      "sha256": "3b7622e2825ea58d0ff091c831b5b41610f13abeb911f13a078e0a2cd7f529bc",
+      "areas": {
+        "all": {
+          "entries": [
+            {
+              "categoryId": "built-up",
+              "label": "Suprafete construite",
+              "percentage": 78.5,
+              "color": "#ef6b4a",
+              "pixels": 3682743
+            },
+            {
+              "categoryId": "trees",
+              "label": "Arbori",
+              "percentage": 4.4,
+              "color": "#16a34a",
+              "pixels": 205008
+            },
+            {
+              "categoryId": "low-vegetation",
+              "label": "Vegetatie joasa",
+              "percentage": 9.6,
+              "color": "#84cc16",
+              "pixels": 449581
+            },
+            {
+              "categoryId": "crops",
+              "label": "Culturi",
+              "percentage": 3.9,
+              "color": "#eab308",
+              "pixels": 181667
+            },
+            {
+              "categoryId": "water",
+              "label": "Apa",
+              "percentage": 3.4,
+              "color": "#38bdf8",
+              "pixels": 161763
+            },
+            {
+              "categoryId": "bare-soil",
+              "label": "Sol gol",
+              "percentage": 0.0,
+              "color": "#a78bfa",
+              "pixels": 276
+            },
+            {
+              "categoryId": "other",
+              "label": "Alta acoperire",
+              "percentage": 0.2,
+              "color": "#94a3b8",
+              "pixels": 9144
+            }
+          ],
+          "validPixels": 4690182,
+          "excludedPixels": 0,
+          "coveragePct": 100.0
+        },
+        "1": {
+          "entries": [
+            {
+              "categoryId": "built-up",
+              "label": "Suprafete construite",
+              "percentage": 66.8,
+              "color": "#ef6b4a",
+              "pixels": 919546
+            },
+            {
+              "categoryId": "trees",
+              "label": "Arbori",
+              "percentage": 11.8,
+              "color": "#16a34a",
+              "pixels": 162273
+            },
+            {
+              "categoryId": "low-vegetation",
+              "label": "Vegetatie joasa",
+              "percentage": 16.1,
+              "color": "#84cc16",
+              "pixels": 221996
+            },
+            {
+              "categoryId": "crops",
+              "label": "Culturi",
+              "percentage": 1.1,
+              "color": "#eab308",
+              "pixels": 14867
+            },
+            {
+              "categoryId": "water",
+              "label": "Apa",
+              "percentage": 4.2,
+              "color": "#38bdf8",
+              "pixels": 57141
+            },
+            {
+              "categoryId": "bare-soil",
+              "label": "Sol gol",
+              "percentage": 0.0,
+              "color": "#a78bfa",
+              "pixels": 52
+            },
+            {
+              "categoryId": "other",
+              "label": "Alta acoperire",
+              "percentage": 0.0,
+              "color": "#94a3b8",
+              "pixels": 152
+            }
+          ],
+          "validPixels": 1376027,
+          "excludedPixels": 0,
+          "coveragePct": 100.0
+        },
+        "2": {
+          "entries": [
+            {
+              "categoryId": "built-up",
+              "label": "Suprafete construite",
+              "percentage": 89.1,
+              "color": "#ef6b4a",
+              "pixels": 556529
+            },
+            {
+              "categoryId": "trees",
+              "label": "Arbori",
+              "percentage": 0.8,
+              "color": "#16a34a",
+              "pixels": 4831
+            },
+            {
+              "categoryId": "low-vegetation",
+              "label": "Vegetatie joasa",
+              "percentage": 3.4,
+              "color": "#84cc16",
+              "pixels": 21515
+            },
+            {
+              "categoryId": "crops",
+              "label": "Culturi",
+              "percentage": 0.0,
+              "color": "#eab308",
+              "pixels": 248
+            },
+            {
+              "categoryId": "water",
+              "label": "Apa",
+              "percentage": 6.6,
+              "color": "#38bdf8",
+              "pixels": 41155
+            }
+          ],
+          "validPixels": 624278,
+          "excludedPixels": 0,
+          "coveragePct": 100.0
+        },
+        "3": {
+          "entries": [
+            {
+              "categoryId": "built-up",
+              "label": "Suprafete construite",
+              "percentage": 91.5,
+              "color": "#ef6b4a",
+              "pixels": 611600
+            },
+            {
+              "categoryId": "trees",
+              "label": "Arbori",
+              "percentage": 0.3,
+              "color": "#16a34a",
+              "pixels": 2330
+            },
+            {
+              "categoryId": "low-vegetation",
+              "label": "Vegetatie joasa",
+              "percentage": 4.1,
+              "color": "#84cc16",
+              "pixels": 27281
+            },
+            {
+              "categoryId": "crops",
+              "label": "Culturi",
+              "percentage": 2.9,
+              "color": "#eab308",
+              "pixels": 19655
+            },
+            {
+              "categoryId": "water",
+              "label": "Apa",
+              "percentage": 1.1,
+              "color": "#38bdf8",
+              "pixels": 7479
+            },
+            {
+              "categoryId": "other",
+              "label": "Alta acoperire",
+              "percentage": 0.0,
+              "color": "#94a3b8",
+              "pixels": 29
+            }
+          ],
+          "validPixels": 668374,
+          "excludedPixels": 0,
+          "coveragePct": 100.0
+        },
+        "4": {
+          "entries": [
+            {
+              "categoryId": "built-up",
+              "label": "Suprafete construite",
+              "percentage": 78.3,
+              "color": "#ef6b4a",
+              "pixels": 507816
+            },
+            {
+              "categoryId": "trees",
+              "label": "Arbori",
+              "percentage": 1.5,
+              "color": "#16a34a",
+              "pixels": 9956
+            },
+            {
+              "categoryId": "low-vegetation",
+              "label": "Vegetatie joasa",
+              "percentage": 5.1,
+              "color": "#84cc16",
+              "pixels": 33134
+            },
+            {
+              "categoryId": "crops",
+              "label": "Culturi",
+              "percentage": 13.0,
+              "color": "#eab308",
+              "pixels": 84054
+            },
+            {
+              "categoryId": "water",
+              "label": "Apa",
+              "percentage": 0.7,
+              "color": "#38bdf8",
+              "pixels": 4519
+            },
+            {
+              "categoryId": "bare-soil",
+              "label": "Sol gol",
+              "percentage": 0.0,
+              "color": "#a78bfa",
+              "pixels": 224
+            },
+            {
+              "categoryId": "other",
+              "label": "Alta acoperire",
+              "percentage": 1.4,
+              "color": "#94a3b8",
+              "pixels": 8934
+            }
+          ],
+          "validPixels": 648637,
+          "excludedPixels": 0,
+          "coveragePct": 100.0
+        },
+        "5": {
+          "entries": [
+            {
+              "categoryId": "built-up",
+              "label": "Suprafete construite",
+              "percentage": 84.3,
+              "color": "#ef6b4a",
+              "pixels": 476253
+            },
+            {
+              "categoryId": "trees",
+              "label": "Arbori",
+              "percentage": 0.2,
+              "color": "#16a34a",
+              "pixels": 1003
+            },
+            {
+              "categoryId": "low-vegetation",
+              "label": "Vegetatie joasa",
+              "percentage": 11.4,
+              "color": "#84cc16",
+              "pixels": 64258
+            },
+            {
+              "categoryId": "crops",
+              "label": "Culturi",
+              "percentage": 4.2,
+              "color": "#eab308",
+              "pixels": 23476
+            },
+            {
+              "categoryId": "water",
+              "label": "Apa",
+              "percentage": 0.0,
+              "color": "#38bdf8",
+              "pixels": 32
+            }
+          ],
+          "validPixels": 565022,
+          "excludedPixels": 0,
+          "coveragePct": 100.0
+        },
+        "6": {
+          "entries": [
+            {
+              "categoryId": "built-up",
+              "label": "Suprafete construite",
+              "percentage": 75.6,
+              "color": "#ef6b4a",
+              "pixels": 611000
+            },
+            {
+              "categoryId": "trees",
+              "label": "Arbori",
+              "percentage": 3.0,
+              "color": "#16a34a",
+              "pixels": 24615
+            },
+            {
+              "categoryId": "low-vegetation",
+              "label": "Vegetatie joasa",
+              "percentage": 10.1,
+              "color": "#84cc16",
+              "pixels": 81397
+            },
+            {
+              "categoryId": "crops",
+              "label": "Culturi",
+              "percentage": 4.9,
+              "color": "#eab308",
+              "pixels": 39369
+            },
+            {
+              "categoryId": "water",
+              "label": "Apa",
+              "percentage": 6.4,
+              "color": "#38bdf8",
+              "pixels": 51437
+            },
+            {
+              "categoryId": "other",
+              "label": "Alta acoperire",
+              "percentage": 0.0,
+              "color": "#94a3b8",
+              "pixels": 29
+            }
+          ],
+          "validPixels": 807847,
+          "excludedPixels": 0,
+          "coveragePct": 100.0
+        }
+      }
+    },
+    "2023": {
+      "sha256": "9385ba7ec7d991ae7ba7b8c759ea817ebd1c4bebb8e7029139962958f67b22ff",
+      "areas": {
+        "all": {
+          "entries": [
+            {
+              "categoryId": "built-up",
+              "label": "Suprafete construite",
+              "percentage": 79.3,
+              "color": "#ef6b4a",
+              "pixels": 3719397
+            },
+            {
+              "categoryId": "trees",
+              "label": "Arbori",
+              "percentage": 4.3,
+              "color": "#16a34a",
+              "pixels": 199712
+            },
+            {
+              "categoryId": "low-vegetation",
+              "label": "Vegetatie joasa",
+              "percentage": 9.0,
+              "color": "#84cc16",
+              "pixels": 422559
+            },
+            {
+              "categoryId": "crops",
+              "label": "Culturi",
+              "percentage": 3.7,
+              "color": "#eab308",
+              "pixels": 175220
+            },
+            {
+              "categoryId": "water",
+              "label": "Apa",
+              "percentage": 3.4,
+              "color": "#38bdf8",
+              "pixels": 159558
+            },
+            {
+              "categoryId": "bare-soil",
+              "label": "Sol gol",
+              "percentage": 0.0,
+              "color": "#a78bfa",
+              "pixels": 723
+            },
+            {
+              "categoryId": "other",
+              "label": "Alta acoperire",
+              "percentage": 0.3,
+              "color": "#94a3b8",
+              "pixels": 13013
+            }
+          ],
+          "validPixels": 4690182,
+          "excludedPixels": 0,
+          "coveragePct": 100.0
+        },
+        "1": {
+          "entries": [
+            {
+              "categoryId": "built-up",
+              "label": "Suprafete construite",
+              "percentage": 67.8,
+              "color": "#ef6b4a",
+              "pixels": 932334
+            },
+            {
+              "categoryId": "trees",
+              "label": "Arbori",
+              "percentage": 11.4,
+              "color": "#16a34a",
+              "pixels": 157314
+            },
+            {
+              "categoryId": "low-vegetation",
+              "label": "Vegetatie joasa",
+              "percentage": 14.8,
+              "color": "#84cc16",
+              "pixels": 203578
+            },
+            {
+              "categoryId": "crops",
+              "label": "Culturi",
+              "percentage": 1.9,
+              "color": "#eab308",
+              "pixels": 25880
+            },
+            {
+              "categoryId": "water",
+              "label": "Apa",
+              "percentage": 4.1,
+              "color": "#38bdf8",
+              "pixels": 56741
+            },
+            {
+              "categoryId": "bare-soil",
+              "label": "Sol gol",
+              "percentage": 0.0,
+              "color": "#a78bfa",
+              "pixels": 53
+            },
+            {
+              "categoryId": "other",
+              "label": "Alta acoperire",
+              "percentage": 0.0,
+              "color": "#94a3b8",
+              "pixels": 127
+            }
+          ],
+          "validPixels": 1376027,
+          "excludedPixels": 0,
+          "coveragePct": 100.0
+        },
+        "2": {
+          "entries": [
+            {
+              "categoryId": "built-up",
+              "label": "Suprafete construite",
+              "percentage": 89.5,
+              "color": "#ef6b4a",
+              "pixels": 558547
+            },
+            {
+              "categoryId": "trees",
+              "label": "Arbori",
+              "percentage": 0.6,
+              "color": "#16a34a",
+              "pixels": 3490
+            },
+            {
+              "categoryId": "low-vegetation",
+              "label": "Vegetatie joasa",
+              "percentage": 3.4,
+              "color": "#84cc16",
+              "pixels": 21199
+            },
+            {
+              "categoryId": "crops",
+              "label": "Culturi",
+              "percentage": 0.0,
+              "color": "#eab308",
+              "pixels": 107
+            },
+            {
+              "categoryId": "water",
+              "label": "Apa",
+              "percentage": 6.6,
+              "color": "#38bdf8",
+              "pixels": 40910
+            },
+            {
+              "categoryId": "bare-soil",
+              "label": "Sol gol",
+              "percentage": 0.0,
+              "color": "#a78bfa",
+              "pixels": 23
+            },
+            {
+              "categoryId": "other",
+              "label": "Alta acoperire",
+              "percentage": 0.0,
+              "color": "#94a3b8",
+              "pixels": 2
+            }
+          ],
+          "validPixels": 624278,
+          "excludedPixels": 0,
+          "coveragePct": 100.0
+        },
+        "3": {
+          "entries": [
+            {
+              "categoryId": "built-up",
+              "label": "Suprafete construite",
+              "percentage": 92.5,
+              "color": "#ef6b4a",
+              "pixels": 618259
+            },
+            {
+              "categoryId": "trees",
+              "label": "Arbori",
+              "percentage": 0.6,
+              "color": "#16a34a",
+              "pixels": 3732
+            },
+            {
+              "categoryId": "low-vegetation",
+              "label": "Vegetatie joasa",
+              "percentage": 2.8,
+              "color": "#84cc16",
+              "pixels": 18701
+            },
+            {
+              "categoryId": "crops",
+              "label": "Culturi",
+              "percentage": 3.0,
+              "color": "#eab308",
+              "pixels": 20030
+            },
+            {
+              "categoryId": "water",
+              "label": "Apa",
+              "percentage": 1.1,
+              "color": "#38bdf8",
+              "pixels": 7045
+            },
+            {
+              "categoryId": "bare-soil",
+              "label": "Sol gol",
+              "percentage": 0.1,
+              "color": "#a78bfa",
+              "pixels": 589
+            },
+            {
+              "categoryId": "other",
+              "label": "Alta acoperire",
+              "percentage": 0.0,
+              "color": "#94a3b8",
+              "pixels": 18
+            }
+          ],
+          "validPixels": 668374,
+          "excludedPixels": 0,
+          "coveragePct": 100.0
+        },
+        "4": {
+          "entries": [
+            {
+              "categoryId": "built-up",
+              "label": "Suprafete construite",
+              "percentage": 79.1,
+              "color": "#ef6b4a",
+              "pixels": 512768
+            },
+            {
+              "categoryId": "trees",
+              "label": "Arbori",
+              "percentage": 1.2,
+              "color": "#16a34a",
+              "pixels": 7950
+            },
+            {
+              "categoryId": "low-vegetation",
+              "label": "Vegetatie joasa",
+              "percentage": 4.6,
+              "color": "#84cc16",
+              "pixels": 29940
+            },
+            {
+              "categoryId": "crops",
+              "label": "Culturi",
+              "percentage": 12.5,
+              "color": "#eab308",
+              "pixels": 81385
+            },
+            {
+              "categoryId": "water",
+              "label": "Apa",
+              "percentage": 0.6,
+              "color": "#38bdf8",
+              "pixels": 3679
+            },
+            {
+              "categoryId": "bare-soil",
+              "label": "Sol gol",
+              "percentage": 0.0,
+              "color": "#a78bfa",
+              "pixels": 58
+            },
+            {
+              "categoryId": "other",
+              "label": "Alta acoperire",
+              "percentage": 2.0,
+              "color": "#94a3b8",
+              "pixels": 12857
+            }
+          ],
+          "validPixels": 648637,
+          "excludedPixels": 0,
+          "coveragePct": 100.0
+        },
+        "5": {
+          "entries": [
+            {
+              "categoryId": "built-up",
+              "label": "Suprafete construite",
+              "percentage": 85.5,
+              "color": "#ef6b4a",
+              "pixels": 483251
+            },
+            {
+              "categoryId": "trees",
+              "label": "Arbori",
+              "percentage": 0.2,
+              "color": "#16a34a",
+              "pixels": 1355
+            },
+            {
+              "categoryId": "low-vegetation",
+              "label": "Vegetatie joasa",
+              "percentage": 11.6,
+              "color": "#84cc16",
+              "pixels": 65721
+            },
+            {
+              "categoryId": "crops",
+              "label": "Culturi",
+              "percentage": 2.6,
+              "color": "#eab308",
+              "pixels": 14592
+            },
+            {
+              "categoryId": "water",
+              "label": "Apa",
+              "percentage": 0.0,
+              "color": "#38bdf8",
+              "pixels": 103
+            }
+          ],
+          "validPixels": 565022,
+          "excludedPixels": 0,
+          "coveragePct": 100.0
+        },
+        "6": {
+          "entries": [
+            {
+              "categoryId": "built-up",
+              "label": "Suprafete construite",
+              "percentage": 76.0,
+              "color": "#ef6b4a",
+              "pixels": 614239
+            },
+            {
+              "categoryId": "trees",
+              "label": "Arbori",
+              "percentage": 3.2,
+              "color": "#16a34a",
+              "pixels": 25873
+            },
+            {
+              "categoryId": "low-vegetation",
+              "label": "Vegetatie joasa",
+              "percentage": 10.3,
+              "color": "#84cc16",
+              "pixels": 83420
+            },
+            {
+              "categoryId": "crops",
+              "label": "Culturi",
+              "percentage": 4.1,
+              "color": "#eab308",
+              "pixels": 33226
+            },
+            {
+              "categoryId": "water",
+              "label": "Apa",
+              "percentage": 6.3,
+              "color": "#38bdf8",
+              "pixels": 51080
+            },
+            {
+              "categoryId": "other",
+              "label": "Alta acoperire",
+              "percentage": 0.0,
+              "color": "#94a3b8",
+              "pixels": 9
+            }
+          ],
+          "validPixels": 807847,
+          "excludedPixels": 0,
+          "coveragePct": 100.0
+        }
+      }
+    },
+    "2025": {
+      "sha256": "c3ec4c83a41063b593cb088a93515945a583c4629ca49e8e5937dc176cf4166b",
+      "areas": {
+        "all": {
+          "entries": [
+            {
+              "categoryId": "built-up",
+              "label": "Suprafete construite",
+              "percentage": 79.8,
+              "color": "#ef6b4a",
+              "pixels": 3742888
+            },
+            {
+              "categoryId": "trees",
+              "label": "Arbori",
+              "percentage": 4.8,
+              "color": "#16a34a",
+              "pixels": 224089
+            },
+            {
+              "categoryId": "low-vegetation",
+              "label": "Vegetatie joasa",
+              "percentage": 8.5,
+              "color": "#84cc16",
+              "pixels": 397843
+            },
+            {
+              "categoryId": "crops",
+              "label": "Culturi",
+              "percentage": 3.2,
+              "color": "#eab308",
+              "pixels": 150163
+            },
+            {
+              "categoryId": "water",
+              "label": "Apa",
+              "percentage": 3.4,
+              "color": "#38bdf8",
+              "pixels": 160532
+            },
+            {
+              "categoryId": "bare-soil",
+              "label": "Sol gol",
+              "percentage": 0.0,
+              "color": "#a78bfa",
+              "pixels": 56
+            },
+            {
+              "categoryId": "other",
+              "label": "Alta acoperire",
+              "percentage": 0.3,
+              "color": "#94a3b8",
+              "pixels": 14611
+            }
+          ],
+          "validPixels": 4690182,
+          "excludedPixels": 0,
+          "coveragePct": 100.0
+        },
+        "1": {
+          "entries": [
+            {
+              "categoryId": "built-up",
+              "label": "Suprafete construite",
+              "percentage": 68.4,
+              "color": "#ef6b4a",
+              "pixels": 941553
+            },
+            {
+              "categoryId": "trees",
+              "label": "Arbori",
+              "percentage": 12.8,
+              "color": "#16a34a",
+              "pixels": 175838
+            },
+            {
+              "categoryId": "low-vegetation",
+              "label": "Vegetatie joasa",
+              "percentage": 12.6,
+              "color": "#84cc16",
+              "pixels": 173311
+            },
+            {
+              "categoryId": "crops",
+              "label": "Culturi",
+              "percentage": 2.0,
+              "color": "#eab308",
+              "pixels": 28041
+            },
+            {
+              "categoryId": "water",
+              "label": "Apa",
+              "percentage": 4.1,
+              "color": "#38bdf8",
+              "pixels": 57083
+            },
+            {
+              "categoryId": "bare-soil",
+              "label": "Sol gol",
+              "percentage": 0.0,
+              "color": "#a78bfa",
+              "pixels": 12
+            },
+            {
+              "categoryId": "other",
+              "label": "Alta acoperire",
+              "percentage": 0.0,
+              "color": "#94a3b8",
+              "pixels": 189
+            }
+          ],
+          "validPixels": 1376027,
+          "excludedPixels": 0,
+          "coveragePct": 100.0
+        },
+        "2": {
+          "entries": [
+            {
+              "categoryId": "built-up",
+              "label": "Suprafete construite",
+              "percentage": 89.4,
+              "color": "#ef6b4a",
+              "pixels": 558349
+            },
+            {
+              "categoryId": "trees",
+              "label": "Arbori",
+              "percentage": 0.9,
+              "color": "#16a34a",
+              "pixels": 5423
+            },
+            {
+              "categoryId": "low-vegetation",
+              "label": "Vegetatie joasa",
+              "percentage": 3.1,
+              "color": "#84cc16",
+              "pixels": 19065
+            },
+            {
+              "categoryId": "crops",
+              "label": "Culturi",
+              "percentage": 0.0,
+              "color": "#eab308",
+              "pixels": 132
+            },
+            {
+              "categoryId": "water",
+              "label": "Apa",
+              "percentage": 6.6,
+              "color": "#38bdf8",
+              "pixels": 41270
+            },
+            {
+              "categoryId": "bare-soil",
+              "label": "Sol gol",
+              "percentage": 0.0,
+              "color": "#a78bfa",
+              "pixels": 10
+            },
+            {
+              "categoryId": "other",
+              "label": "Alta acoperire",
+              "percentage": 0.0,
+              "color": "#94a3b8",
+              "pixels": 29
+            }
+          ],
+          "validPixels": 624278,
+          "excludedPixels": 0,
+          "coveragePct": 100.0
+        },
+        "3": {
+          "entries": [
+            {
+              "categoryId": "built-up",
+              "label": "Suprafete construite",
+              "percentage": 94.1,
+              "color": "#ef6b4a",
+              "pixels": 629038
+            },
+            {
+              "categoryId": "trees",
+              "label": "Arbori",
+              "percentage": 0.6,
+              "color": "#16a34a",
+              "pixels": 3705
+            },
+            {
+              "categoryId": "low-vegetation",
+              "label": "Vegetatie joasa",
+              "percentage": 2.8,
+              "color": "#84cc16",
+              "pixels": 18382
+            },
+            {
+              "categoryId": "crops",
+              "label": "Culturi",
+              "percentage": 1.4,
+              "color": "#eab308",
+              "pixels": 9582
+            },
+            {
+              "categoryId": "water",
+              "label": "Apa",
+              "percentage": 1.1,
+              "color": "#38bdf8",
+              "pixels": 7406
+            },
+            {
+              "categoryId": "other",
+              "label": "Alta acoperire",
+              "percentage": 0.0,
+              "color": "#94a3b8",
+              "pixels": 261
+            }
+          ],
+          "validPixels": 668374,
+          "excludedPixels": 0,
+          "coveragePct": 100.0
+        },
+        "4": {
+          "entries": [
+            {
+              "categoryId": "built-up",
+              "label": "Suprafete construite",
+              "percentage": 79.2,
+              "color": "#ef6b4a",
+              "pixels": 513620
+            },
+            {
+              "categoryId": "trees",
+              "label": "Arbori",
+              "percentage": 1.4,
+              "color": "#16a34a",
+              "pixels": 8931
+            },
+            {
+              "categoryId": "low-vegetation",
+              "label": "Vegetatie joasa",
+              "percentage": 4.6,
+              "color": "#84cc16",
+              "pixels": 29549
+            },
+            {
+              "categoryId": "crops",
+              "label": "Culturi",
+              "percentage": 12.2,
+              "color": "#eab308",
+              "pixels": 78877
+            },
+            {
+              "categoryId": "water",
+              "label": "Apa",
+              "percentage": 0.5,
+              "color": "#38bdf8",
+              "pixels": 3506
+            },
+            {
+              "categoryId": "bare-soil",
+              "label": "Sol gol",
+              "percentage": 0.0,
+              "color": "#a78bfa",
+              "pixels": 33
+            },
+            {
+              "categoryId": "other",
+              "label": "Alta acoperire",
+              "percentage": 2.2,
+              "color": "#94a3b8",
+              "pixels": 14121
+            }
+          ],
+          "validPixels": 648637,
+          "excludedPixels": 0,
+          "coveragePct": 100.0
+        },
+        "5": {
+          "entries": [
+            {
+              "categoryId": "built-up",
+              "label": "Suprafete construite",
+              "percentage": 86.0,
+              "color": "#ef6b4a",
+              "pixels": 485896
+            },
+            {
+              "categoryId": "trees",
+              "label": "Arbori",
+              "percentage": 0.4,
+              "color": "#16a34a",
+              "pixels": 2301
+            },
+            {
+              "categoryId": "low-vegetation",
+              "label": "Vegetatie joasa",
+              "percentage": 11.3,
+              "color": "#84cc16",
+              "pixels": 63766
+            },
+            {
+              "categoryId": "crops",
+              "label": "Culturi",
+              "percentage": 2.3,
+              "color": "#eab308",
+              "pixels": 13034
+            },
+            {
+              "categoryId": "water",
+              "label": "Apa",
+              "percentage": 0.0,
+              "color": "#38bdf8",
+              "pixels": 24
+            },
+            {
+              "categoryId": "bare-soil",
+              "label": "Sol gol",
+              "percentage": 0.0,
+              "color": "#a78bfa",
+              "pixels": 1
+            }
+          ],
+          "validPixels": 565022,
+          "excludedPixels": 0,
+          "coveragePct": 100.0
+        },
+        "6": {
+          "entries": [
+            {
+              "categoryId": "built-up",
+              "label": "Suprafete construite",
+              "percentage": 76.1,
+              "color": "#ef6b4a",
+              "pixels": 614433
+            },
+            {
+              "categoryId": "trees",
+              "label": "Arbori",
+              "percentage": 3.5,
+              "color": "#16a34a",
+              "pixels": 27892
+            },
+            {
+              "categoryId": "low-vegetation",
+              "label": "Vegetatie joasa",
+              "percentage": 11.6,
+              "color": "#84cc16",
+              "pixels": 93771
+            },
+            {
+              "categoryId": "crops",
+              "label": "Culturi",
+              "percentage": 2.5,
+              "color": "#eab308",
+              "pixels": 20497
+            },
+            {
+              "categoryId": "water",
+              "label": "Apa",
+              "percentage": 6.3,
+              "color": "#38bdf8",
+              "pixels": 51243
+            },
+            {
+              "categoryId": "other",
+              "label": "Alta acoperire",
+              "percentage": 0.0,
+              "color": "#94a3b8",
+              "pixels": 11
+            }
+          ],
+          "validPixels": 807847,
+          "excludedPixels": 0,
+          "coveragePct": 100.0
+        }
+      }
+    }
+  }
+}

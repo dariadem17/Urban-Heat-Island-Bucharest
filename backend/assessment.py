@@ -1,8 +1,4 @@
-"""Deterministic, raster-backed screening facts for the explore report.
-
-No land-cover classifier or assessment database is bundled with this project.
-Only the local LST/NDVI rasters are treated as measurements here.
-"""
+"""Raster-backed LST/NDVI screening with separate annual land-cover context."""
 
 import json
 from functools import lru_cache
@@ -13,6 +9,13 @@ import rasterio
 from rasterio.mask import mask
 from rasterio.warp import transform_geom
 from scipy.stats import spearmanr
+
+try:
+    from .land_cover import record as land_cover_record
+    from .project_guidance import apply_guidance, report_for
+except ImportError:
+    from land_cover import record as land_cover_record
+    from project_guidance import apply_guidance, report_for
 
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
@@ -26,7 +29,28 @@ def boundaries():
 
 
 def area_name(area):
-    return "Bucharest" if area == "all" else f"Sector {area}"
+    return "Bucuresti" if area == "all" else f"Sectorul {area}"
+
+
+@lru_cache(maxsize=7)
+def timeline(area):
+    """Small annual series for historical context and relative-city persistence."""
+    rows = []
+    for year in (2015, 2018, 2020, 2023, 2025):
+        lst, ndvi = statistics("lst", year, area), statistics("ndvi", year, area)
+        city_lst, city_ndvi = statistics("lst", year, "all"), statistics("ndvi", year, "all")
+        cover = land_cover_record(year, area)
+        entries = cover["entries"] if cover else []
+        rows.append({
+            "year": year,
+            "lst": lst["mean"] if lst else None,
+            "ndvi": ndvi["mean"] if ndvi else None,
+            "lstVsCity": round(lst["mean"] - city_lst["mean"], 2) if lst and city_lst and area != "all" else None,
+            "ndviVsCity": round(ndvi["mean"] - city_ndvi["mean"], 3) if ndvi and city_ndvi and area != "all" else None,
+            "builtPct": next((item["percentage"] for item in entries if item["categoryId"] == "built-up"), None),
+            "treesPct": next((item["percentage"] for item in entries if item["categoryId"] == "trees"), None),
+        })
+    return rows
 
 
 def _geometries(area):
@@ -37,7 +61,7 @@ def _geometries(area):
     matching = [feature["geometry"] for feature in boundaries()
                 if str(feature["properties"].get("sectorId", feature["properties"].get("name", "").split()[-1])) == area]
     if not matching:
-        raise ValueError("Sector boundary is unavailable")
+        raise ValueError("Limita sectorului nu este disponibila")
     return matching
 
 
@@ -138,30 +162,30 @@ def relationship(year, area):
     lst = pixels("lst", year, area)
     ndvi = pixels("ndvi", year, area)
     if lst is None or ndvi is None:
-        return {"available": False, "reason": "A matching LST/NDVI raster pair is unavailable."}
+        return {"available": False, "reason": "Nu exista o pereche de rastere LST si NDVI pentru aceasta selectie."}
     lst_grid, ndvi_grid = lst[1], ndvi[1]
     if lst[2] != ndvi[2] or not np.allclose(
         [lst_grid.a, lst_grid.b, lst_grid.d, lst_grid.e],
         [ndvi_grid.a, ndvi_grid.b, ndvi_grid.d, ndvi_grid.e], atol=1e-9,
     ) or lst_grid.b != 0 or lst_grid.d != 0:
-        return {"available": False, "reason": "LST and NDVI grids have incompatible CRS or pixel geometry."}
+        return {"available": False, "reason": "Rasterele LST si NDVI au sisteme de coordonate sau grile incompatibile."}
     column_offset = (ndvi_grid.c - lst_grid.c) / lst_grid.a
     row_offset = (ndvi_grid.f - lst_grid.f) / lst_grid.e
     if abs(column_offset - round(column_offset)) > 1e-6 or abs(row_offset - round(row_offset)) > 1e-6:
-        return {"available": False, "reason": "LST and NDVI pixels do not share exact grid cells; no interpolation was applied."}
+        return {"available": False, "reason": "Pixelii LST si NDVI nu se suprapun exact; nu s-a aplicat interpolare."}
     column_offset, row_offset = round(column_offset), round(row_offset)
     lst_col, ndvi_col = max(0, column_offset), max(0, -column_offset)
     lst_row, ndvi_row = max(0, row_offset), max(0, -row_offset)
     rows = min(lst[0].shape[0] - lst_row, ndvi[0].shape[0] - ndvi_row)
     columns = min(lst[0].shape[1] - lst_col, ndvi[0].shape[1] - ndvi_col)
     if rows <= 0 or columns <= 0:
-        return {"available": False, "reason": "LST and NDVI rasters have no shared cells in this area."}
+        return {"available": False, "reason": "Rasterele LST si NDVI nu au pixeli comuni in aceasta zona."}
     lst_values = lst[0][lst_row:lst_row + rows, lst_col:lst_col + columns]
     ndvi_values = ndvi[0][ndvi_row:ndvi_row + rows, ndvi_col:ndvi_col + columns]
     valid = np.isfinite(lst_values) & np.isfinite(ndvi_values)
     x, y = ndvi_values[valid], lst_values[valid]
     if x.size < 30 or np.std(x) == 0 or np.std(y) == 0:
-        return {"available": False, "reason": "Too few variable paired pixels for a relationship estimate."}
+        return {"available": False, "reason": "Exista prea putini pixeli valizi pentru estimarea relatiei."}
     pearson = round(float(np.corrcoef(x, y)[0, 1]), 3)
     spearman = round(float(spearmanr(x, y).statistic), 3)
     strength = ("very weak" if abs(spearman) < .2 else "weak" if abs(spearman) < .4
@@ -175,15 +199,15 @@ def relationship(year, area):
                 if low.size >= 30 and high.size >= 30 else None)
     sample_indices = np.random.default_rng(0).choice(x.size, size=min(x.size, 250), replace=False)
     sample_points = [{"ndvi": round(float(x[i]), 3), "lst": round(float(y[i]), 2)} for i in sample_indices]
-    summary = ("Pixels with higher NDVI tend to coincide with lower surface temperature here."
+    summary = ("In aceasta zona, valorile NDVI mai mari tind sa coincida cu temperaturi mai mici ale suprafetei."
                if spearman <= -.2 else
-               "Pixels with higher NDVI tend to coincide with higher surface temperature here."
+               "In aceasta zona, valorile NDVI mai mari tind sa coincida cu temperaturi mai mari ale suprafetei."
                if spearman >= .2 else
-               "There is no clear NDVI–surface-temperature pattern in the paired pixels.")
+               "Pixelii comparati nu arata un tipar clar intre NDVI si temperatura suprafetei.")
     return {"available": True, "pearsonR": pearson, "spearmanRho": spearman,
             "sampleCount": int(x.size), "direction": "negative" if spearman < 0 else "positive" if spearman > 0 else "neutral",
             "strength": strength, "summary": summary, "contrast": contrast, "samplePoints": sample_points,
-            "method": "Spearman and Pearson on same-CRS, exactly aligned valid 30 m cells; integer-cell offsets matched, unmatched edges excluded, no resampling"}
+            "method": "Corelatii Spearman si Pearson pe pixeli valizi de 30 m, aliniati exact in acelasi sistem de coordonate; marginile nealiniate au fost excluse, fara reesantionare"}
 
 
 @lru_cache(maxsize=48)
@@ -210,131 +234,47 @@ def assessment(year, area):
                "cityAvgLstC": city_lst["mean"] if city_lst else None,
                "deltaVsCityC": round(lst["mean"] - city_lst["mean"], 2) if lst and city_lst else None,
                "hotspotAreaPct": lst["hotspotPct"] if lst else None,
+               "cityHotspotAreaPct": city_lst["hotspotPct"] if city_lst else None,
                "hotspotThresholdC": lst["hotspotThresholdC"] if lst else None,
                "score": thermal_score, "level": _level(thermal_score) if thermal_score is not None else None,
-               "reason": None if lst else "Local LST raster is unavailable or invalid."}
+               "reason": None if lst else "Rasterul LST local nu este disponibil sau nu este valid."}
     vegetation = {"available": bool(ndvi), "avgNdvi": ndvi["mean"] if ndvi else None,
                   "cityAvgNdvi": city_ndvi["mean"] if city_ndvi else None,
                   "deltaVsCity": round(ndvi["mean"] - city_ndvi["mean"], 3) if ndvi and city_ndvi else None,
                   "vegetatedAreaPct": ndvi["vegetatedPct"] if ndvi else None,
                   "surfaceBreakdown": ndvi["surfaceBreakdown"] if ndvi else [],
-                  "vegetatedDefinition": "Share of valid NDVI pixels > 0.4; not classified land cover." if ndvi else None,
+                  "vegetatedDefinition": "Procentul pixelilor NDVI valizi peste 0.4; nu este o clasificare a terenului." if ndvi else None,
                   "deficitScore": deficit_score, "level": _level(deficit_score) if deficit_score is not None else None,
-                  "reason": None if ndvi else "Local NDVI raster is unavailable or invalid."}
+                  "reason": None if ndvi else "Rasterul NDVI local nu este disponibil sau nu este valid."}
     cooling = {key: value for key, value in relationship(year, area).items() if key != "samplePoints"}
-    recommendations = []
-    if area == "all" and city_candidates:
-        recommendations = [
-            f"Review Sector {item['sector']}: mean LST is {item['lstDeltaC']:+.2f} °C and mean NDVI is {item['ndviDelta']:+.3f} versus Bucharest."
-            for item in city_candidates[:2]
-        ]
-        recommendations.append("For those sectors, check shade, exposed paving and existing vegetation at site level before selecting interventions.")
-    elif lst and ndvi and city_lst and city_ndvi:
-        if lst["mean"] > city_lst["mean"] and ndvi["mean"] < city_ndvi["mean"]:
-            recommendations = [
-                "Investigate tree shade and ground-level greening where site conditions permit.",
-                "Assess reflective surfaces, permeable paving and building-integrated greening at site level.",
-                "Preserve existing vegetation before selecting new interventions.",
-            ]
-        elif lst["mean"] > city_lst["mean"]:
-            recommendations = ["Investigate other site-level heat drivers before attributing exposure to vegetation.",
-                               "Assess shade and lower heat-absorbing surfaces where feasible."]
-        elif ndvi["mean"] < city_ndvi["mean"]:
-            recommendations = ["Investigate opportunities to preserve and connect vegetation at site level."]
-        else:
-            recommendations = ["Preserve existing vegetation and monitor future surface-temperature changes."]
-    else:
-        recommendations = ["Obtain missing raster evidence before setting an intervention priority."]
-    priority = ("compare sectors" if area == "all" and city_candidates else
-                "focused review" if thermal["deltaVsCityC"] is not None and thermal["deltaVsCityC"] > 0
-                and vegetation["deltaVsCity"] is not None and vegetation["deltaVsCity"] < 0
-                else "routine review" if lst and ndvi else "insufficient data")
-    return {
+    cover = land_cover_record(year, area)
+    city_cover = land_cover_record(year, "all")
+    built_pct = next((entry["percentage"] for entry in cover["entries"] if entry["categoryId"] == "built-up"), 0) if cover else None
+    city_built_pct = next((entry["percentage"] for entry in city_cover["entries"] if entry["categoryId"] == "built-up"), 0) if city_cover else None
+    facts = {
         "area": {"code": "bucharest" if area == "all" else f"sector_{area}", "name": area_name(area)},
         "year": year, "season": "summer", "thermal": thermal, "vegetation": vegetation,
         "cooling": cooling,
-        "builtPressure": {"available": False, "reason": "Validated Land Cover data is not present in this project."},
-        "resilience": {"available": False, "reason": "A resilience score requires validated Land Cover data."},
-        "intervention": {"available": bool(lst and ndvi), "priority": priority,
-                         "recommendations": recommendations, "basis": "Project screening rules using same-year city references."},
+        "landCover": {"available": bool(cover), "sourceYear": year if cover else None,
+                      "period": "anual" if cover else None, "entries": cover["entries"] if cover else [],
+                      "validPixels": cover["validPixels"] if cover else None},
+        "builtPressure": {"available": bool(cover), "builtPct": built_pct, "cityBuiltPct": city_built_pct,
+                          "reason": None if cover else "Nu exista land cover pentru acest an."},
+        "resilience": {"available": False, "reason": "Nu exista un scor de rezilienta validat pentru aceasta aplicatie."},
+        "intervention": {"available": bool(lst and ndvi), "priority": "insufficient data",
+                         "recommendations": [], "basis": ""},
         "benchmark": {"available": area != "all" and bool(all(sector_lst) and all(sector_ndvi)),
                       "prioritySectors": city_candidates[:2] if area == "all" else [],
                       "thermalScore": thermal_score, "vegetationDeficitScore": deficit_score,
                       "totalComparableAreas": 6 if all(sector_lst) and all(sector_ndvi) else None,
-                      "method": "Rank among six sectors; 0 is lowest and 100 highest for each pressure indicator."},
+                      "method": "Rang intre sase sectoare; 0 este valoarea cea mai mica, 100 cea mai mare pentru fiecare indicator."},
         "provenance": {"lst": {"status": "DERIVED" if lst else "UNAVAILABLE", "source": lst["source"] if lst else None,
                                 "validPixels": lst["validPixels"] if lst else None},
                        "ndvi": {"status": "DERIVED" if ndvi else "UNAVAILABLE", "source": ndvi["source"] if ndvi else None,
                                  "validPixels": ndvi["validPixels"] if ndvi else None},
-                       "landCover": {"status": "UNAVAILABLE"}},
+                        "landCover": {"status": "DERIVED" if cover else "UNAVAILABLE",
+                                      "source": "Esri / Impact Observatory / Microsoft Sentinel-2 Land Cover" if cover else None,
+                                      "sourceYear": year if cover else None}},
         "methodologyVersion": METHOD,
     }
-
-
-def report_for(facts):
-    area, year = facts["area"]["name"], facts["year"]
-    thermal, vegetation, cooling = facts["thermal"], facts["vegetation"], facts["cooling"]
-    if area == "Bucharest" and thermal["available"] and vegetation["available"]:
-        candidates = facts["benchmark"].get("prioritySectors", [])
-        focus = (" Sectors " + " and ".join(str(item["sector"]) for item in candidates) +
-                 " show both higher LST and lower NDVI than the city reference and deserve a closer look."
-                 if candidates else " Select a sector to see where local conditions differ.")
-        summary = (f"Bucharest is the reference area for summer {year}. Mean land surface temperature is "
-                   f"{thermal['avgLstC']:.2f} °C and mean NDVI is {vegetation['avgNdvi']:.3f}."
-                   f"{focus}")
-    elif thermal["deltaVsCityC"] is not None and vegetation["deltaVsCity"] is not None:
-        heat = "above" if thermal["deltaVsCityC"] > 0 else "below" if thermal["deltaVsCityC"] < 0 else "equal to"
-        green = "below" if vegetation["deltaVsCity"] < 0 else "above" if vegetation["deltaVsCity"] > 0 else "equal to"
-        summary = (f"{area} has mean surface temperature {abs(thermal['deltaVsCityC']):.2f} °C {heat} "
-                   f"the Bucharest reference and mean NDVI {abs(vegetation['deltaVsCity']):.3f} {green} it in summer {year}. "
-                   "Use these signals to choose what to inspect on site; they do not prove a cause or predict a temperature reduction.")
-    else:
-        summary = f"Evidence is incomplete for {area} in summer {year}. Check the missing datasets before prioritising interventions."
-    if cooling["available"]:
-        summary += f" {cooling['summary'].rstrip('.')} (Spearman ρ = {cooling['spearmanRho']:+.3f})."
-    sections = [{"title": "Area and period", "body": f"{area}, summer {year}. Satellite-derived surface measurements are used for screening."}]
-    if thermal["available"]:
-        comparison = (f" The city reference is {thermal['cityAvgLstC']:.2f} °C; the difference is {thermal['deltaVsCityC']:+.2f} °C."
-                      if thermal["deltaVsCityC"] is not None else "")
-        sections.append({"title": "Thermal exposure", "body":
-                         f"Mean land surface temperature (LST) is {thermal['avgLstC']:.2f} °C.{comparison} "
-                         f"{thermal['hotspotAreaPct']:.1f}% of valid pixels exceed the Bucharest-wide 90th-percentile threshold of {thermal['hotspotThresholdC']:.2f} °C for this year."})
-    else:
-        sections.append({"title": "Thermal exposure", "body": thermal["reason"]})
-    if vegetation["available"]:
-        comparison = (f" The city reference is {vegetation['cityAvgNdvi']:.3f}; the difference is {vegetation['deltaVsCity']:+.3f}."
-                      if vegetation["deltaVsCity"] is not None else "")
-        sections.append({"title": "Vegetation signal", "body":
-                         f"Mean NDVI is {vegetation['avgNdvi']:.3f}.{comparison} "
-                         f"{vegetation['vegetatedAreaPct']:.1f}% of valid pixels have NDVI > 0.4. This is a spectral threshold, not a Land Cover classification."})
-    else:
-        sections.append({"title": "Vegetation signal", "body": vegetation["reason"]})
-    if vegetation["surfaceBreakdown"]:
-        breakdown = "; ".join(f"{item['label']}: {item['percentage']:.1f}%" for item in vegetation["surfaceBreakdown"])
-        sections.append({"title": "NDVI surface breakdown", "body":
-                         f"Shares of valid pixels by spectral interval: {breakdown}. These intervals do not identify buildings, water or land-use classes."})
-    sections.append({"title": "Vegetation–temperature relationship", "body":
-                     (f"Paired pixels show a {cooling['strength']} {cooling['direction']} NDVI–LST association "
-                      f"(Spearman ρ = {cooling['spearmanRho']:+.3f}; Pearson r = {cooling['pearsonR']:+.3f}; "
-                      f"n = {cooling['sampleCount']:,}). "
-                      + (f"Mean LST for pixels with NDVI ≥ 0.4 is {cooling['contrast']['highNdviMeanLstC']:.2f} °C, "
-                         f"versus {cooling['contrast']['lowNdviMeanLstC']:.2f} °C for NDVI < 0.2. "
-                         if cooling['contrast'] else "")
-                      + "This spatial association is not a predicted cooling effect or proof of causation."
-                      if cooling["available"] else cooling["reason"])})
-    sections.append({"title": "Built environment and resilience", "body":
-                     "Validated Land Cover data is unavailable. Built-up heat pressure and a heat-resilience score cannot be calculated."})
-    benchmark = facts["benchmark"]
-    sections.append({"title": "Benchmark", "body":
-                     (f"Project-defined six-sector pressure ranks: thermal {benchmark['thermalScore']}/100; "
-                      f"vegetation deficit {benchmark['vegetationDeficitScore']}/100. These are relative screening ranks, not standardized ratings."
-                      if benchmark["available"] else "A six-sector comparative rank is unavailable for this selection.")})
-    sections.append({"title": "What to investigate", "body": " ".join(facts["intervention"]["recommendations"])})
-    sections.append({"title": "Data limitations", "body":
-                     "This is a screening-level interpretation of satellite LST and NDVI. LST is surface temperature, not air temperature. "
-                     "Associations are not causal. Per-year scene dates and a uniform summer-selection method still need confirmation before interpreting cross-year differences. "
-                     "Site-level meteorological, engineering, planning and regulatory assessment is still needed."})
-    return {"title": f"Urban development assessment · {area} · {year}", "summary": summary, "sections": sections,
-            "dataNote": f"Sources: LST {facts['provenance']['lst']['source'] or 'unavailable'}; "
-                        f"NDVI {facts['provenance']['ndvi']['source'] or 'unavailable'}. {METHOD}. Land Cover unavailable.",
-            "assessment": facts}
+    return apply_guidance(facts)
