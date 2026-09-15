@@ -55,10 +55,10 @@ Aceasta impartire poate reprezenta direct cele patru contributii ale echipei. Nu
 
 | Membru | Responsabilitate principala |
 |---|---|
-| Membru 1 | LST |
-| Membru 2 | NDVI |
-| Membru 3 | Backend |
-| Membru 4 | Frontend si integrarea Land Cover in produs |
+|  Mihai Rădulescu​  | LST |
+|  Cristian Pleșeanu| NDVI |
+| Daria-Alexandra Demian | Backend |
+| Iuliana-Alexandra Florea | Frontend si integrarea Land Cover |
 
 Land Cover nu trebuie prezentat ca o a cincea parte. Conceptual, el este contextul care ajuta Frontend-ul sa explice de ce doua zone pot avea profiluri diferite. Tehnic, procentele sunt pregatite si servite de Backend. In acest fel, contributia poate fi atribuita persoanei care a realizat integrarea vizuala, cu mentiunea ca pipeline-ul este comun cu Backend-ul.
 
@@ -153,21 +153,5 @@ Un produs comercial ar putea oferi:
 
 Clientul nu cumpara o simpla harta, ci un raspuns mai rapid la intrebarea: **ce riscuri termice si ce oportunitati de infrastructura verde trebuie investigate inainte sa investim in acest amplasament?**
 
-## Structura repository-ului
 
-```text
-backend/
-  data/                  rastere locale, Land Cover sumarizat, limite
-  scripts/               reconstruirea datelor Land Cover
-  assessment.py          analiza raster si relatia LST-NDVI
-  project_guidance.py    interpretari deterministe
-  main.py                API FastAPI si imagini pentru harta
 
-frontend/
-  public/data/           fallback pentru limitele sectoarelor
-  src/components/        harta, controale, grafice, raport, comparatie
-  src/services/          adaptor API si mod demonstrativ
-  src/types/             contractele TypeScript
-```
-
-Documentatia tehnica detaliata se afla si in [ASSESSMENT_DATA_CONTRACT.md](ASSESSMENT_DATA_CONTRACT.md), [backend/REPORTING.md](backend/REPORTING.md) si [frontend/BACKEND_CONTRACT.md](frontend/BACKEND_CONTRACT.md).
