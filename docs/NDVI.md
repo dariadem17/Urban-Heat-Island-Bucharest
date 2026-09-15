@@ -1,84 +1,198 @@
 # NDVI - Normalized Difference Vegetation Index
 
-## Rolul in proiect
+## Despre NDVI
 
-NDVI este un indice spectral calculat din reflectanta in infrarosu apropiat si rosu. El evidentiaza intensitatea semnalului de vegetatie si permite compararea spatiala cu temperatura suprafetei.
+NDVI (Normalized Difference Vegetation Index) este un indice folosit pentru a identifica prezenta si intensitatea vegetatiei folosind imagini satelitare.
 
-Componenta NDVI raspunde la intrebarea: **unde exista semnal de vegetatie si cum se asociaza acesta cu LST?**
+In proiect folosim NDVI pentru a vedea cum este distribuita vegetatia in Bucuresti si pentru a compara aceste rezultate cu temperatura suprafetei obtinuta din LST.
+
+Intrebarea principala pentru aceasta parte este:
+
+**Unde exista mai multa sau mai putina vegetatie si ce relatie observam intre NDVI si LST?**
+
+---
 
 ## Date folosite
 
-Sunt disponibile rastere pentru 2015, 2018, 2020, 2023 si 2025. Metadatele indica:
+Pentru analiza NDVI avem rastere pentru anii:
 
-- Landsat 8 Collection 2 Level-2;
-- scene individuale din luna august;
-- rezolutie de 30 m;
+- 2015
+- 2018
+- 2020
+- 2023
+- 2025
+
+Datele provin din Landsat 8 Collection 2 Level-2.
+
+Rasterele folosite in proiect au:
+
+- scene din luna august;
+- rezolutie spatiala de 30 m;
 - CRS `EPSG:32635`;
-- NoData `-9999`;
-- decupare la limita administrativa a Bucurestiului;
-- export pe grila folosita de LST.
+- valoare NoData `-9999`;
+- decupare dupa limita administrativa a Bucurestiului;
+- aceeasi grila folosita pentru datele LST.
 
-## Calcul
+Folosirea aceleiasi grile este importanta pentru anii in care vrem sa comparam LST si NDVI la nivel de pixel.
 
-Formula folosita este:
+---
+
+## Calculul NDVI
+
+NDVI este calculat folosind benzile de rosu si infrarosu apropiat din imaginile Landsat.
+
+Formula este:
 
 ```text
 NDVI = (NIR - RED) / (NIR + RED)
-     = (SR_B5 - SR_B4) / (SR_B5 + SR_B4)
 ```
 
-Reflectanta Landsat este scalata cu `0.0000275 - 0.2`. Norii si umbrele sunt mascate din `QA_PIXEL`, folosind bitii documentati in metadatele livrate. Valorile valide NDVI sunt pastrate in intervalul `-1 ... 1`.
+Pentru Landsat 8:
 
-## Indicatori derivati
+```text
+NDVI = (SR_B5 - SR_B4) / (SR_B5 + SR_B4)
+```
 
-- NDVI mediu, minim si maxim;
-- distributie pe intervalele `<0.2`, `0.2-0.4`, `0.4-0.6`, `>0.6`;
+unde:
+
+```text
+SR_B5 = Near Infrared (NIR)
+SR_B4 = Red
+```
+
+Pentru benzile Landsat Collection 2 Level-2 se aplica factorii de scalare ai produsului:
+
+```text
+reflectance = DN * 0.0000275 - 0.2
+```
+
+Norii si umbrele sunt eliminati folosind informatiile din banda `QA_PIXEL`.
+
+Dupa procesare, valorile NDVI valide sunt pastrate in intervalul:
+
+```text
+-1 ... 1
+```
+
+---
+
+## Statistici calculate
+
+Pentru Bucuresti si pentru fiecare sector calculam:
+
+- NDVI mediu;
+- NDVI minim;
+- NDVI maxim;
+- distributia valorilor NDVI;
 - procentul pixelilor cu NDVI peste `0.4`;
-- diferenta dintre sector si media Bucurestiului;
-- distributie spectrala separata pentru anii fara Land Cover.
+- diferenta fata de media Bucurestiului pentru acelasi an.
 
-Intervalele NDVI sunt semnale spectrale. Ele nu trebuie redenumite automat cladiri, apa, arbori sau parc. Pentru aceste clase se foloseste produsul Land Cover separat.
+Pentru distributie folosim intervalele:
 
-## Relatia cu LST
+```text
+NDVI < 0.2
+0.2 - 0.4
+0.4 - 0.6
+NDVI > 0.6
+```
 
-Backend-ul suprapune rasterele LST si NDVI numai daca au CRS si grile compatibile. Sunt pastrati pixelii valizi comuni, fara a inventa valori si fara reesantionare. Apoi sunt calculate:
+Aceste intervale ne ajuta sa vedem distributia valorilor NDVI, dar nu sunt folosite pentru a clasifica direct tipurile de teren.
 
-- corelatia Spearman, utila pentru o relatie monotona;
-- corelatia Pearson, utila pentru relatia liniara;
-- media LST pentru pixeli cu NDVI scazut si ridicat;
-- un esantion determinist de puncte pentru grafic.
+De exemplu, o valoare NDVI mica nu inseamna automat ca pixelul reprezinta o cladire sau un drum.
 
-O corelatie negativa inseamna ca, in observatia analizata, valorile NDVI mai mari tind sa coincida cu suprafete mai reci. Aceasta este o asociere spatiala, nu dovada ca vegetatia a produs singura diferenta de temperatura.
+Pentru identificarea claselor precum zone construite, vegetatie sau apa folosim separat datele Land Cover.
 
-## Reasoning
+---
 
-NDVI completeaza LST deoarece doua zone cu temperatura similara pot avea conditii de vegetatie foarte diferite. Pentru dezvoltatori, combinatia este mai utila decat oricare strat separat:
+## Comparatia cu Bucurestiul
 
-- LST ridicat + NDVI redus indica o zona care merita verificata pentru umbra si infrastructura verde;
-- LST redus + NDVI ridicat indica elemente verzi care merita pastrate;
-- rezultate mixte cer verificarea hartii si a parcelei, nu o recomandare automata.
+Pentru fiecare sector calculam si diferenta dintre NDVI-ul mediu al sectorului si NDVI-ul mediu al Bucurestiului pentru acelasi an.
+
+```text
+delta = NDVI mediu sector - NDVI mediu Bucuresti
+```
+
+O valoare pozitiva arata ca sectorul are un NDVI mediu mai mare decat media orasului pentru observatia respectiva.
+
+O valoare negativa arata ca NDVI-ul mediu este sub media Bucurestiului.
+
+Astfel putem compara sectoarele folosind aceeasi referinta pentru anul selectat.
+
+---
+
+## Relatia dintre NDVI si LST
+
+Una dintre analizele proiectului este compararea NDVI cu LST.
+
+Pentru aceasta analiza, backend-ul verifica mai intai daca rasterele LST si NDVI sunt compatibile:
+
+- acelasi CRS;
+- aceeasi rezolutie;
+- aceeasi grila;
+- aceeasi zona analizata.
+
+Sunt folositi doar pixelii care au valori valide in ambele rastere.
+
+Nu completam pixelii lipsa cu valori artificiale.
+
+Pentru datele compatibile putem calcula:
+
+- corelatia Spearman;
+- corelatia Pearson;
+- media LST pentru zone cu valori NDVI diferite;
+- un esantion de puncte pentru reprezentarea grafica.
+
+Corelatia Spearman este folosita pentru a observa daca exista o relatie generala intre cele doua variabile, iar Pearson ne ajuta sa verificam relatia liniara.
+
+De exemplu, o corelatie negativa inseamna ca pixelii cu NDVI mai mare tind sa aiba valori LST mai mici in observatia analizata.
+
+Aceasta este o asociere intre cele doua seturi de date si nu demonstreaza ca vegetatia este singura cauza a temperaturilor observate.
+
+---
+
+## De ce folosim NDVI impreuna cu LST
+
+LST ne arata unde suprafata este mai calda, iar NDVI ne ofera informatii despre vegetatie.
+
+Analizate impreuna, cele doua straturi ne ajuta sa intelegem mai bine diferentele dintre zone.
+
+De exemplu:
+
+- LST ridicat si NDVI redus pot indica o zona in care merita analizata mai atent prezenta vegetatiei si a suprafetelor construite;
+- LST redus si NDVI ridicat pot indica zone in care vegetatia contribuie la caracteristicile locale observate;
+- rezultate diferite sau neclare trebuie verificate folosind harta si celelalte date disponibile.
+
+Aplicatia nu genereaza automat concluzii despre o parcela doar pe baza acestor doua valori.
+
+---
 
 ## Ce afiseaza aplicatia
 
-- overlay NDVI georeferentiat;
-- legenda continua intre 0 si 1 pentru citirea vizuala;
-- distributia valorilor;
-- comparatii intre zone si ani;
-- evolutia fata de media orasului;
-- interpretarea comuna LST-NDVI.
+Datele NDVI sunt folosite in frontend pentru:
+
+- harta NDVI;
+- legenda valorilor;
+- statistici pentru Bucuresti si sectoare;
+- distributia valorilor NDVI;
+- comparatii intre sectoare;
+- comparatii intre ani;
+- diferenta fata de media Bucurestiului;
+- analiza relatiei dintre NDVI si LST.
+
+---
 
 ## Limite
 
-- NDVI nu este o clasificare Land Cover.
-- Apa, solul, umbrele si suprafetele construite pot avea valori joase sau negative similare.
-- Metadatele actuale descriu scene unice din august, nu medii complete ale verii.
-- Corelatia LST-NDVI nu estimeaza efectul viitor al unui parc sau acoperis verde.
+NDVI trebuie interpretat impreuna cu celelalte date ale proiectului.
 
-## Contributia membrului NDVI
+Cateva limite importante sunt:
 
-Pentru prezentarea echipei, aceasta parte poate include: selectarea scenelor, calcularea indicelui din benzile Landsat, mascarea norilor, alinierea cu LST, exportul GeoTIFF, metadatele si interpretarea corelatiei LST-NDVI.
+- NDVI nu este o clasificare Land Cover;
+- valori mici sau negative pot aparea pentru apa, sol, suprafete construite sau alte zone fara vegetatie;
+- scenele folosite reprezinta observatii din anumite zile din luna august, nu media intregii veri;
+- norii si umbrele pot influenta datele daca nu sunt mascate corect;
+- diferentele dintre ani pot fi influentate si de conditiile din momentul achizitiei imaginii;
+- corelatia dintre NDVI si LST nu demonstreaza o relatie de cauzalitate;
+- analiza nu poate estima direct cu cate grade ar scadea temperatura daca ar fi construit un parc sau un acoperis verde.
 
-## Referinte
-
-- [USGS - Landsat Normalized Difference Vegetation Index](https://www.usgs.gov/landsat-missions/landsat-normalized-difference-vegetation-index)
-- [USGS - Landsat Collection 2 Level-2 Science Products](https://www.usgs.gov/landsat-missions/landsat-collection-2-level-2-science-products)
+Din acest motiv, folosim NDVI ca indicator pentru analiza vegetatiei si pentru comparatii spatiale, impreuna cu LST si Land Cover.
