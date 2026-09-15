@@ -31,7 +31,7 @@ Proiectul este impartit in patru componente principale:
 
 **Land Cover** este folosit ca informatie de context si este integrat in partea de frontend. Statisticile aferente sunt pregatite si furnizate de backend.
 
-Pentru mai multe detalii, vezi documentatia din folderul `docs/`.
+Pentru mai multe detalii despre fiecare componenta, vezi documentatia din folderul `docs/`.
 
 ---
 
@@ -88,7 +88,7 @@ http://localhost:5173
 
 ### LST
 
-LST (Land Surface Temperature) reprezinta temperatura suprafetei terestre. In aplicatie este folosita pentru identificarea si compararea zonelor cu temperaturi mai ridicate.
+LST (Land Surface Temperature) reprezinta temperatura suprafetei terestre. In aplicatie este folosita pentru identificarea zonelor cu temperaturi mai ridicate si pentru compararea valorilor intre observatiile disponibile.
 
 Datele disponibile sunt pentru anii:
 
@@ -100,15 +100,27 @@ Datele disponibile sunt pentru anii:
 
 ### NDVI
 
-NDVI (Normalized Difference Vegetation Index) este folosit pentru a observa semnalul asociat vegetatiei.
+NDVI (Normalized Difference Vegetation Index) este folosit pentru observarea semnalului asociat vegetatiei.
 
-LST si NDVI sunt analizate impreuna la nivelul pixelilor aliniati pentru a vedea daca exista o asociere intre vegetatie si temperatura suprafetei.
+LST si NDVI pot fi analizate impreuna la nivelul pixelilor aliniati pentru a vedea daca exista o asociere intre vegetatie si temperatura suprafetei.
+
+Datele NDVI sunt disponibile pentru aceiasi ani:
+
+- 2015
+- 2018
+- 2020
+- 2023
+- 2025
 
 ### Land Cover
 
-Land Cover ofera context despre tipurile de suprafete din oras, de exemplu zone construite, vegetatie sau alte clase de acoperire a terenului.
+Land Cover ofera context despre tipurile de suprafete din oras, de exemplu zone construite, vegetatie, apa sau alte clase de acoperire a terenului.
 
 Procentele sunt calculate la nivel de oras sau sector si nu trebuie interpretate ca o clasificare exacta a unei parcele.
+
+Pentru selectiile din aplicatie sunt folosite date Land Cover pentru 2018, 2020, 2023 si 2025. Pentru selectia 2015 este folosita cea mai apropiata clasificare disponibila, din 2017.
+
+Anul real al sursei este pastrat separat, astfel incat clasificarea din 2017 sa nu fie prezentata ca fiind realizata in 2015.
 
 ### Sectoare
 
@@ -121,15 +133,16 @@ Limitele celor sase sectoare din Bucuresti sunt folosite pentru agregarea si com
 Dashboard-ul permite:
 
 - vizualizarea hartilor LST si NDVI;
-- afisarea limitelor sectoarelor;
-- compararea anilor disponibili;
+- afisarea limitelor celor sase sectoare;
+- selectarea anilor disponibili;
 - afisarea unor statistici precum medie, minim si maxim;
 - vizualizarea distributiilor valorilor;
 - vizualizarea statisticilor Land Cover;
 - analiza relatiei dintre LST si NDVI;
-- evolutia in timp pentru LST si NDVI;
-- comparatii intre sectoare;
-- comparatii intre un sector si media Bucurestiului;
+- vizualizarea observatiilor istorice pentru LST si NDVI;
+- compararea a doua dintre cele sase sectoare pentru acelasi an;
+- compararea aceleiasi zone intre doi ani diferiti;
+- raportarea anumitor indicatori ai unui sector la media Bucurestiului;
 - generarea unui raport scurt cu semnale si actiuni care merita verificate.
 
 Pentru identificarea hotspot-urilor folosim percentila 90 a valorilor LST din Bucuresti pentru anul analizat. Astfel, pragul este calculat in functie de distributia datelor din acel an.
@@ -144,7 +157,7 @@ Am incercat sa pastram interpretarea rezultatelor cat mai apropiata de ceea ce p
 - O asociere intre NDVI si LST nu demonstreaza automat o relatie de cauzalitate.
 - Procentele de Land Cover sunt statistici la nivel de oras sau sector, nu la nivel de parcela.
 - Zonele construite pot include mai multe tipuri de suprafete, inclusiv drumuri.
-- Rezultatele istorice sunt folosite pentru comparatie si observarea unor tipare, nu ca predictie numerica a viitorului.
+- Rezultatele istorice sunt folosite pentru comparatie si observarea unor diferente, nu ca predictie numerica a viitorului.
 - Recomandarile din aplicatie reprezinta semnale care trebuie verificate prin date suplimentare si, unde este cazul, prin observatii din teren.
 
 Aplicatia nu estimeaza direct reducerea poluarii si nu afirma ca o anumita interventie va produce un numar exact de grade de racire.
@@ -153,53 +166,93 @@ Aplicatia nu estimeaza direct reducerea poluarii si nu afirma ca o anumita inter
 
 ## Comparatii intre ani si sectoare
 
-Pentru comparatiile intre sectoare folosim si diferenta fata de media Bucurestiului pentru acelasi an.
+Aplicatia permite doua tipuri principale de comparatii.
 
-Acest lucru ne ajuta sa evitam situatia in care interpretam o valoare absoluta fara sa tinem cont de conditiile generale ale anului respectiv.
+### Comparatie intre sectoare
 
-Datele disponibile sunt:
+Pot fi comparate doua dintre cele sase sectoare pentru acelasi an.
 
-- **LST:** 2015, 2018, 2020, 2023, 2025
-- **NDVI:** 2015, 2018, 2020, 2023, 2025
-- **Land Cover:** 2015, 2018, 2020, 2023, 2025
-- **Limitele sectoarelor:** GeoJSON in WGS84
+De exemplu:
 
-Pentru NDVI, metadatele disponibile trebuie luate in considerare la interpretare, deoarece datele provin din scene individuale si nu reprezinta neaparat o medie pentru perioada iunie-august.
+```text
+Sector 2 - 2025
+vs
+Sector 6 - 2025
+```
+
+`Tot Bucurestiul` nu poate fi selectat ca una dintre cele doua zone in acest tip de comparatie.
+
+Media Bucurestiului poate fi folosita separat ca reper pentru anumiti indicatori ai sectorului selectat, dar nu reprezinta o selectie in comparatia dintre sectoare.
+
+### Comparatie intre ani
+
+Poate fi comparata aceeasi zona pentru doi ani diferiti.
+
+Zona poate fi unul dintre cele sase sectoare sau `Tot Bucurestiul`.
+
+De exemplu, pentru un sector:
+
+```text
+Sector 3 - 2018
+vs
+Sector 3 - 2025
+```
+
+sau pentru intregul oras:
+
+```text
+Tot Bucurestiul - 2018
+vs
+Tot Bucurestiul - 2025
+```
+
+Pot fi comparati doi ani disponibili pentru aceeasi zona.
+
+Anii istorici sunt folositi ca repere pentru observarea diferentelor dintre momentele disponibile. Comparatiile nu reprezinta o predictie asupra evolutiei viitoare.
 
 ---
 
 ## Arhitectura aplicatiei
 
 ```text
-GeoTIFF LST / NDVI       GeoTIFF Land Cover       GeoJSON sectoare
-         |                       |                       |
-         +-----------------------+-----------------------+
-                                 |
-                    Python + Rasterio + NumPy
-                                 |
-                  FastAPI: statistici, comparatii,
-                         raport si API
-                                 |
-                       React + TypeScript
-                              MapLibre
-                                 |
-                    Explore / Compare / Rapoarte
+GeoTIFF LST / NDVI       Land Cover       GeoJSON sectoare
+          \                  |                  /
+           \                 |                 /
+                    Backend FastAPI
+                          |
+                          v
+                Procesare si statistici
+                          |
+                          v
+                       SQLite
+                          |
+                          v
+                         API
+                          |
+                          v
+                 Frontend React
+                          |
+                          v
+              Explore / Compare / Harta
 ```
 
 Backend-ul foloseste:
 
 - **FastAPI** pentru API;
 - **Rasterio** si **NumPy** pentru lucrul cu datele raster;
+- **SciPy** pentru anumite calcule statistice;
 - **SQLite / SQLAlchemy** pentru persistarea unor rezultate calculate.
 
 Frontend-ul este construit cu:
 
-- **React**
-- **TypeScript**
-- **Vite**
-- **MapLibre**
-- **Recharts**
-- **TanStack Query**
+- **React**;
+- **TypeScript**;
+- **Vite**;
+- **MapLibre**;
+- **Recharts**;
+- **TanStack Query**.
+
+Frontend-ul nu acceseaza direct fisierele raster sau baza de date. Datele sunt procesate de backend si sunt trimise interfetei prin API.
 
 ---
 
@@ -209,15 +262,15 @@ Frontend-ul este partea cu care interactioneaza utilizatorul.
 
 Principalele componente sunt:
 
-- `ControlPanel` – filtre si controale;
-- `MapPanel` – harta si straturile geospatiale;
+- `ControlPanel` - filtre si controale;
+- `MapPanel` - harta si straturile geospatiale;
 - componentele de analiza si grafice;
 - partea de comparatii;
 - raportul si zona de insights.
 
 `App.tsx` coordoneaza interfata, starea si navigarea dintre principalele zone ale aplicatiei.
 
-Datele sunt gestionate prin hooks, TanStack Query si `dataService`.
+Datele sunt gestionate prin hooks, TanStack Query si serviciile pentru comunicarea cu backend-ul.
 
 Aplicatia poate lucra atat cu API-ul real, cat si cu date demonstrative, in functie de configurare.
 
@@ -227,30 +280,47 @@ Aplicatia poate lucra atat cu API-ul real, cat si cu date demonstrative, in func
 
 Fiecare set de date ne spune ceva diferit:
 
-- **LST** → cat de calda este suprafata;
-- **NDVI** → unde exista semnal de vegetatie;
-- **Land Cover** → ce tipuri de suprafete contribuie la contextul zonei;
-- **Sectoarele** → ne permit sa agregam si sa comparam rezultatele.
+- **LST** -> cat de calda este suprafata;
+- **NDVI** -> unde exista semnal de vegetatie;
+- **Land Cover** -> ce tipuri de suprafete contribuie la contextul zonei;
+- **Sectoarele** -> permit agregarea si compararea rezultatelor.
 
-LST si NDVI sunt analizate impreuna pentru a observa posibile asocieri intre temperatura si vegetatie, in timp ce Land Cover este folosit in principal pentru a intelege contextul suprafetelor analizate.
+LST si NDVI sunt analizate impreuna pentru a observa posibile asocieri intre temperatura suprafetei si vegetatie.
+
+Land Cover este folosit separat ca informatie de context despre tipurile de suprafete din zona analizata.
 
 ---
 
 ## Functionalitati principale
 
-Aplicatia ofera mai multe moduri de explorare a datelor:
+Aplicatia ofera doua moduri principale de explorare a datelor.
 
 ### Explore
 
-Permite vizualizarea spatiala a datelor si explorarea diferitelor straturi pentru un anumit an.
+Explore permite vizualizarea spatiala a datelor pentru o anumita zona si un anumit an.
+
+Utilizatorul poate explora:
+
+- harta LST;
+- harta NDVI;
+- statisticile zonei;
+- distributiile valorilor;
+- Land Cover;
+- relatia dintre LST si NDVI;
+- contextul oferit de observatiile istorice disponibile.
+
+Pentru 2025, observatiile din 2015, 2018, 2020 si 2023 pot fi folosite pentru a oferi context asupra valorilor recente.
 
 ### Compare
 
-Permite compararea:
+Compare permite doua tipuri de comparatii:
 
-- anilor;
-- sectoarelor;
+- doua dintre cele sase sectoare pentru acelasi an;
+- aceeasi zona intre doi ani diferiti.
 
+Pentru comparatia intre ani, zona poate fi un sector sau `Tot Bucurestiul`.
+
+Pentru comparatia intre sectoare sunt disponibile doar cele sase sectoare. `Tot Bucurestiul` nu poate fi folosit ca una dintre cele doua selectii.
 
 ### Analiza
 
@@ -262,10 +332,10 @@ Sunt disponibile statistici precum:
 - distributii;
 - ponderea hotspot-urilor;
 - statistici Land Cover;
-- corelatii LST–NDVI.
-- evolutie in timp LST / NDVI;
+- corelatii LST-NDVI;
+- observatii istorice LST si NDVI.
 
-Pentru relatia dintre LST si NDVI pot fi folosite atat corelatia Pearson, cat si Spearman.
+Pentru relatia dintre LST si NDVI pot fi folosite corelatiile Pearson si Spearman atunci cand datele sunt compatibile.
 
 ### Raport
 
@@ -277,10 +347,10 @@ Aplicatia poate genera un raport scurt care sintetizeaza principalele semnale ob
 
 Proiectul poate fi extins prin adaugarea unor surse suplimentare de date:
 
-- **Calitatea aerului** – indicatori de poluare;
-- **Microclimat urban** – temperatura si umiditate la nivel local;
-- **Senzori IoT** – date in timp real despre temperatura, umiditate, zgomot si poluare;
-- **Simularea interventiilor** – arbori, acoperisuri verzi si suprafete permeabile.
+- **Calitatea aerului** - indicatori de poluare;
+- **Microclimat urban** - temperatura si umiditate la nivel local;
+- **Senzori IoT** - date in timp real despre temperatura, umiditate, zgomot si poluare;
+- **Simularea interventiilor** - arbori, acoperisuri verzi si suprafete permeabile.
 
 Scopul ar fi sa trecem de la simpla vizualizare a unor indicatori catre o analiza mai complexa a unui amplasament urban.
 
@@ -308,20 +378,21 @@ Ideea nu este sa inlocuiasca studiile tehnice, ci sa ofere o prima imagine asupr
 
 | Membru | Responsabilitate |
 |---|---|
-| **Mihai Rădulescu** | LST |
-| **Cristian Pleșeanu** | NDVI |
+| **Mihai Radulescu** | LST |
+| **Cristian Pleseanu** | NDVI |
 | **Daria-Alexandra Demian** | Backend |
 | **Iuliana-Alexandra Florea** | Frontend si integrarea Land Cover |
 
 ---
 
-
-
 ## Documentatie
 
-Pentru detalii suplimentare despre date si integrarea componentelor, vezi documentele din folderul `docs/` si:
+Pentru detalii suplimentare despre implementare si date, vezi documentatia separata pentru:
 
-- `ASSESSMENT_DATA_CONTRACT.md`
+- LST;
+- NDVI;
+- Backend;
+- Frontend.
 
 ---
 
@@ -333,8 +404,9 @@ Pentru interpretarea corecta a rezultatelor trebuie tinut cont de cateva limitar
 2. Datele satelitare ofera o imagine spatiala si temporala limitata a fenomenului.
 3. Corelatia dintre LST si NDVI nu implica automat cauzalitate.
 4. Statisticile Land Cover sunt agregate la nivel de oras sau sector.
-5. Rezultatele trebuie validate cu informatii suplimentare atunci cand sunt folosite pentru decizii concrete asupra unui amplasament.
-6. Aplicatia este gandita pentru screening si explorare, nu pentru a inlocui studiile tehnice sau de mediu.
+5. Observatiile din ani diferiti nu reprezinta o serie continua de masuratori.
+6. Rezultatele trebuie validate cu informatii suplimentare atunci cand sunt folosite pentru decizii concrete asupra unui amplasament.
+7. Aplicatia este gandita pentru screening si explorare, nu pentru a inlocui studiile tehnice sau de mediu.
 
 ---
 
@@ -342,4 +414,4 @@ Pentru interpretarea corecta a rezultatelor trebuie tinut cont de cateva limitar
 
 Am construit un dashboard geospatial pentru explorarea insulei de caldura urbana din Bucuresti, folosind LST, NDVI, Land Cover si limitele administrative ale sectoarelor.
 
-Aplicatia ne permite sa exploram datele spatial si temporal, sa comparam zone si ani si sa identificam semnale care pot fi investigate mai departe in contextul dezvoltarii urbane.
+Aplicatia permite explorarea datelor spatial si temporal, compararea sectoarelor si a anilor disponibili si observarea relatiei dintre temperatura suprafetei, vegetatie si tipurile de suprafete urbane.
