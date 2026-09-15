@@ -11,15 +11,24 @@ from rasterio.warp import transform_geom
 from scipy.stats import spearmanr
 
 try:
+    from .database import get_metric, get_relationship, save_metric, save_relationship
     from .land_cover import record as land_cover_record
     from .project_guidance import apply_guidance, report_for
 except ImportError:
+    from database import get_metric, get_relationship, save_metric, save_relationship
     from land_cover import record as land_cover_record
     from project_guidance import apply_guidance, report_for
 
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
 METHOD = "raster-screening-v2"
+
+
+def _file_signature(path):
+    if not path.is_file():
+        return "missing"
+    details = path.stat()
+    return f"{details.st_size}:{details.st_mtime_ns}"
 
 
 @lru_cache(maxsize=1)
@@ -96,6 +105,11 @@ def pixels(metric, year, area):
 
 @lru_cache(maxsize=84)
 def statistics(metric, year, area):
+    source_path = DATA_DIR / f"{metric}_{year}.tif"
+    signature = _file_signature(source_path)
+    cached = get_metric(metric, year, area, signature)
+    if cached is not None:
+        return cached
     result = pixels(metric, year, area)
     if result is None:
         return None
@@ -128,6 +142,7 @@ def statistics(metric, year, area):
             {"label": label, "percentage": round(float(count / valid.size * 100), 1), "color": color}
             for label, count, color in zip(spectral_labels, spectral_counts, spectral_colors)
         ]
+    save_metric(metric, year, area, signature, facts)
     return facts
 
 
@@ -159,6 +174,10 @@ def _sector_percentile(value, values, reverse=False):
 
 @lru_cache(maxsize=48)
 def relationship(year, area):
+    signature = "|".join(_file_signature(DATA_DIR / f"{metric}_{year}.tif") for metric in ("lst", "ndvi"))
+    cached = get_relationship(year, area, signature)
+    if cached is not None:
+        return cached
     lst = pixels("lst", year, area)
     ndvi = pixels("ndvi", year, area)
     if lst is None or ndvi is None:
@@ -204,10 +223,12 @@ def relationship(year, area):
                "In aceasta zona, valorile NDVI mai mari tind sa coincida cu temperaturi mai mari ale suprafetei."
                if spearman >= .2 else
                "Pixelii comparati nu arata un tipar clar intre NDVI si temperatura suprafetei.")
-    return {"available": True, "pearsonR": pearson, "spearmanRho": spearman,
-            "sampleCount": int(x.size), "direction": "negative" if spearman < 0 else "positive" if spearman > 0 else "neutral",
-            "strength": strength, "summary": summary, "contrast": contrast, "samplePoints": sample_points,
-            "method": "Corelatii Spearman si Pearson pe pixeli valizi de 30 m, aliniati exact in acelasi sistem de coordonate; marginile nealiniate au fost excluse, fara reesantionare"}
+    result = {"available": True, "pearsonR": pearson, "spearmanRho": spearman,
+              "sampleCount": int(x.size), "direction": "negative" if spearman < 0 else "positive" if spearman > 0 else "neutral",
+              "strength": strength, "summary": summary, "contrast": contrast, "samplePoints": sample_points,
+              "method": "Corelatii Spearman si Pearson pe pixeli valizi de 30 m, aliniati exact in acelasi sistem de coordonate; marginile nealiniate au fost excluse, fara reesantionare"}
+    save_relationship(year, area, signature, result)
+    return result
 
 
 @lru_cache(maxsize=48)

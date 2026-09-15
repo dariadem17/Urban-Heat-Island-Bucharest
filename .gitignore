@@ -223,3 +223,8 @@ __marimo__/
 /backend/data/lst/
 /backend/data/ndvi/
 /backend/data/*.qgz/
+
+# Local calculated database (recreated with backend/seed_db.py)
+/backend/uhi_data.db
+/backend/uhi_data.db-shm
+/backend/uhi_data.db-wal

@@ -39,6 +39,9 @@ py -m venv backend/.venv
 | `main.py` | configurarea FastAPI, endpoint-uri, procesarea imaginilor pentru harta |
 | `assessment.py` | pixeli, statistici, hotspoturi, relatie LST-NDVI si timeline |
 | `land_cover.py` | adaptor pentru sumarul anual Land Cover |
+| `database.py` | persistenta SQLite pentru rezultatele calculate |
+| `models.py` | schema tabelelor SQLite |
+| `seed_db.py` | popularea reproductibila din TIFF-uri si JSON |
 | `project_guidance.py` | interpretari si recomandari bazate pe reguli |
 | `scripts/build_land_cover.py` | descarcare si agregare Land Cover pe sectoare |
 | `data/bucharest-sectors.geojson` | limitele celor sase sectoare |
@@ -82,18 +85,35 @@ Rebuild optional:
 ./backend/.venv/Scripts/python.exe backend/scripts/build_land_cover.py --download
 ```
 
+## Baza de date locala
+
+Backendul salveaza automat in `backend/uhi_data.db` statisticile calculate din
+TIFF-uri si sumarul Land Cover citit din JSON. La urmatoarea pornire, rezultatele
+neschimbate sunt citite din SQLite. Semnatura fisierului sursa este verificata;
+daca un TIFF sau JSON se modifica, randul aferent este recalculat automat.
+
+Pentru a genera toate combinatiile de ani si zone inainte de pornirea API-ului:
+
+```powershell
+.\backend\seed-db.cmd
+```
+
+Fisierul `uhi_data.db` este local si nu se trimite pe Git. Schema si scriptul de
+populare se trimit, iar fiecare membru al echipei isi genereaza aceeasi baza din
+fisierele TIFF locale si din `landcover-summary.json` urmarit de Git.
+
 Selectiile disponibile sunt 2015, 2018, 2020, 2023 si 2025. Pentru selectia 2015 este folosita cea mai apropiata clasificare disponibila, din 2017; anul sursa ramane in metadatele interne. Clasa `Suprafete construite` include drumuri. Land Cover nu este o medie a verii si nu descrie dreptul de construire al unei parcele.
 
-## Baza de date
+### Ce se stocheaza
 
-Versiunea curenta ruleaza direct din GeoTIFF, GeoJSON si JSON-ul Land Cover. Acest lucru este suficient pentru demo si pastreaza sursa calculelor vizibila. O baza SQLite sau PostgreSQL/PostGIS poate stoca ulterior:
+- mediile, minimele, maximele si distributiile LST si NDVI;
+- procentul zonelor foarte calde si al pixelilor cu NDVI peste 0.4;
+- corelatiile Pearson si Spearman, contrastul termic si esantionul graficului;
+- procentele Land Cover, anul clasificarii si numarul pixelilor valizi;
+- semnaturile fisierelor sursa folosite pentru invalidarea automata a cache-ului.
 
-- metadatele seturilor de date;
-- statisticile precompute;
-- provenienta si versiunile metodelor;
-- rezultate pentru parcele si utilizatori.
-
-Contractul API permite aceasta schimbare fara rescrierea frontend-ului.
+Rapoartele si recomandarile raman generate din aceste valori prin regulile din
+`project_guidance.py`, astfel incat textul sa reflecte mereu datele persistate.
 
 ## Verificare
 
