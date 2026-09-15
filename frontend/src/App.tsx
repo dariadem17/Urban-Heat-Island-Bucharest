@@ -3,6 +3,7 @@ import { ArrowRightLeft, MapPinned, SlidersHorizontal } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { AnalyticsPanel } from './components/analytics/AnalyticsPanel';
 import { ChartPanel } from './components/charts/ChartPanel';
+import { TemporalTrendPanel } from './components/charts/TemporalTrendPanel';
 import { ComparisonPanel } from './components/comparison/ComparisonPanel';
 import { ControlPanel } from './components/controls/ControlPanel';
 import { MapPanel } from './components/map/MapPanel';
@@ -175,6 +176,10 @@ function App() {
                   loading={statisticsQuery.isLoading}
                   error={statisticsQuery.isError}
                 />
+
+                {selectedYear === 2025 && reportQuery.data?.timeline?.length ? (
+                  <TemporalTrendPanel timeline={reportQuery.data.timeline} city={selectedSector === 'all'} />
+                ) : null}
 
                 <div className="grid gap-4 xl:grid-cols-[2.1fr_1fr]">
                   <ChartPanel stats={statisticsQuery.data ?? null} landCover={landCoverQuery.data ?? []} activeLayer={selectedLayer} loading={statisticsQuery.isLoading || landCoverQuery.isLoading} error={statisticsQuery.isError || landCoverQuery.isError} />

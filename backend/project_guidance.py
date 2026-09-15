@@ -129,8 +129,12 @@ def report_for(facts, history=None):
             summary = f"{facts['year']} este un reper istoric; nu avem toate valorile pentru o comparatie cu 2025."
         if selected and selected["builtPct"] is not None and latest["builtPct"] is not None:
             cover_change = latest["builtPct"] - selected["builtPct"]
+            historical_cover_label = (f"reperul Land Cover asociat selectiei {facts['year']}"
+                                      if facts["landCover"].get("sourceYear") != facts["year"]
+                                      else str(facts["year"]))
             summary += (f" Suprafetele construite sunt {latest['builtPct']:.1f}% in 2025 "
-                        f"fata de {selected['builtPct']:.1f}% in {facts['year']} ({cover_change:+.1f} puncte procentuale).")
+                        f"fata de {selected['builtPct']:.1f}% in {historical_cover_label} "
+                        f"({cover_change:+.1f} puncte procentuale).")
         signal = _temporal_signal(history, facts["area"]["code"])
         historical_facts = {**facts, "intervention": {**facts["intervention"],
                             "priority": "historical", "recommendations": [signal]}}
@@ -141,6 +145,8 @@ def report_for(facts, history=None):
             "sections": [{"title": "Ce ramane relevant azi", "body": signal}],
             "dataNote": ("Comparatia foloseste observatii din veri diferite; diferenta LST nu dovedeste efectul construirii. "
                          + ("Land Cover nu este disponibil pentru acest an. " if not facts["landCover"]["available"] else "")
+                         + ("Land Cover foloseste cea mai apropiata clasificare disponibila. "
+                            if facts["landCover"]["available"] and facts["landCover"].get("sourceYear") != facts["year"] else "")
                          + "Nu este o prognoza a temperaturii sau a poluarii."),
             "assessment": historical_facts,
         }
@@ -154,6 +160,7 @@ def report_for(facts, history=None):
         "mode": "current",
         "summary": facts["projectSummary"],
         "temporalSignal": _temporal_signal(history, facts["area"]["code"]) if history else None,
+        "timeline": history or [],
         "sections": [{"title": "Recomandari pentru proiect", "body": " ".join(facts["intervention"]["recommendations"])}],
         "dataNote": note,
         "assessment": facts,

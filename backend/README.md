@@ -82,7 +82,7 @@ Rebuild optional:
 ./backend/.venv/Scripts/python.exe backend/scripts/build_land_cover.py --download
 ```
 
-Ani disponibili: 2018, 2020, 2023 si 2025. Clasa `Suprafete construite` include drumuri. Land Cover nu este o medie a verii si nu descrie dreptul de construire al unei parcele.
+Selectiile disponibile sunt 2015, 2018, 2020, 2023 si 2025. Pentru selectia 2015 este folosita cea mai apropiata clasificare disponibila, din 2017; anul sursa ramane in metadatele interne. Clasa `Suprafete construite` include drumuri. Land Cover nu este o medie a verii si nu descrie dreptul de construire al unei parcele.
 
 ## Baza de date
 

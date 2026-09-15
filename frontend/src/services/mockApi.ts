@@ -103,6 +103,23 @@ function dominantLandCover(entries: LandCoverEntry[]) {
   return entries.reduce<LandCoverEntry | null>((largest, entry) => !largest || entry.percentage > largest.percentage ? entry : largest, null);
 }
 
+function timelineFor(sectorId: SectorId, season: Season) {
+  return YEARS.map((year) => {
+    const area = statisticsFor(sectorId, year, season);
+    const city = statisticsFor('all', year, season);
+    const cover = landCoverFor(sectorId, year);
+    return {
+      year,
+      lst: area.avgLst,
+      ndvi: area.avgNdvi,
+      lstVsCity: sectorId !== 'all' && area.avgLst !== null && city.avgLst !== null ? Number((area.avgLst - city.avgLst).toFixed(2)) : null,
+      ndviVsCity: sectorId !== 'all' && area.avgNdvi !== null && city.avgNdvi !== null ? Number((area.avgNdvi - city.avgNdvi).toFixed(3)) : null,
+      builtPct: cover.find((entry) => entry.categoryId === 'built-up')?.percentage ?? null,
+      treesPct: cover.find((entry) => entry.categoryId === 'trees')?.percentage ?? null,
+    };
+  });
+}
+
 function reportFor(stats: SectorStatistics, landCover: LandCoverEntry[]): EnvironmentalReport {
   const location = sectorLabel(stats.sectorId);
   const latestYear = YEARS.at(-1) ?? 2025;
@@ -120,7 +137,14 @@ function reportFor(stats: SectorStatistics, landCover: LandCoverEntry[]): Enviro
     { title: 'Ce sugereaza indicatorii', body: `${location}: ${heat}, ${cover}${dominant ? `, iar categoria dominanta este ${dominant.label.toLowerCase()}` : ''}. Compara harta LST cu NDVI pentru a cauta unde caldura coincide cu vegetatia redusa.` },
     { title: 'Ce sa verifici pentru proiect', body: 'Verifica umbra si pavajul pe teren. Daca zona este fierbinte si are putina vegetatie, rezerva loc pentru arbori, sol permeabil si trasee umbrite.' },
   ];
-  return { title: `${location} - ${stats.year}`, mode: 'current', sections, dataNote: `Date sintetice demonstrative, nu o evaluare a unei parcele. Verifica datele reale inainte de decizia de construire.` };
+  return {
+    title: `${location} - ${stats.year}`,
+    mode: 'current',
+    temporalSignal: 'Graficul arata daca pozitia zonei fata de oras se repeta in observatiile disponibile; nu este o prognoza.',
+    timeline: timelineFor(stats.sectorId, stats.season),
+    sections,
+    dataNote: 'Date sintetice demonstrative, nu o evaluare a unei parcele. Verifica datele reale inainte de decizia de construire.',
+  };
 }
 
 async function loadStaticBoundaries(): Promise<SectorBoundaryCollection | null> {
@@ -205,21 +229,6 @@ export const mockDashboardService: DashboardDataService = {
         ? `In ${sectorLabel(secondarySector)}, localizeaza zonele cele mai calde si prioritizeaza umbra, arborii si reducerea pavajului expus.`
         : `In ${sectorLabel(secondarySector)}, pastreaza arborii si solul permeabil de pe amplasament; verifica harta hotspoturilor inainte de proiectare.`;
     const historicalSectorComparison = request.type === 'sector' && request.primaryYear < (YEARS.at(-1) ?? 2025);
-    const timeline = request.type === 'year' ? YEARS.map((year) => {
-      const area = statisticsFor(request.primarySector, year, request.season);
-      const city = statisticsFor('all', year, request.season);
-      const cover = landCoverFor(request.primarySector, year);
-      return {
-        year,
-        lst: area.avgLst,
-        ndvi: area.avgNdvi,
-        lstVsCity: area.avgLst !== null && city.avgLst !== null ? Number((area.avgLst - city.avgLst).toFixed(2)) : null,
-        ndviVsCity: area.avgNdvi !== null && city.avgNdvi !== null ? Number((area.avgNdvi - city.avgNdvi).toFixed(3)) : null,
-        builtPct: cover.find((entry) => entry.categoryId === 'built-up')?.percentage ?? null,
-        treesPct: cover.find((entry) => entry.categoryId === 'trees')?.percentage ?? null,
-      };
-    }) : [];
-
     return {
       type: request.type,
       layer: request.layer,
@@ -228,7 +237,6 @@ export const mockDashboardService: DashboardDataService = {
       primary: { label: primaryLabel, sectorId: request.primarySector, year: request.primaryYear, season: request.season, statistics: primaryStats, landCover: primaryLandCover, mapLayer: layerFor(request.layer, request.primarySector, request.primaryYear, request.season) },
       secondary: { label: secondaryLabel, sectorId: secondarySector, year: secondaryYear, season: request.season, statistics: secondaryStats, landCover: secondaryLandCover, mapLayer: layerFor(request.layer, secondarySector, secondaryYear, request.season) },
       metrics,
-      timeline,
       sharedLegend: LAYER_DESCRIPTORS[request.layer].legend,
       report: [
         { title: request.type === 'year' ? 'Evolutia observata' : 'Ce spun datele impreuna', body: comparisonReading },

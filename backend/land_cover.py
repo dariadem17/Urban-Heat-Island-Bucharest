@@ -20,13 +20,15 @@ def record(year, area):
     data = summary()
     if not data:
         return None
-    return data.get("years", {}).get(str(year), {}).get("areas", {}).get(str(area))
+    year_record = data.get("years", {}).get(str(year), {})
+    item = year_record.get("areas", {}).get(str(area))
+    return {**item, "sourceYear": year_record.get("sourceYear", year)} if item else None
 
 
 def entries(year, area):
     data, item = summary(), record(year, area)
     if not data or not item:
         return []
-    return [{**entry, "sourceYear": year, "sourceName": data["dataset"],
+    return [{**entry, "sourceYear": item["sourceYear"], "sourceName": data["dataset"],
              "sourceUrl": data["sourceUrl"], "period": data["period"]}
             for entry in item["entries"]]

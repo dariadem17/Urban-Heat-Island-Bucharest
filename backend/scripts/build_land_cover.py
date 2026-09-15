@@ -21,7 +21,9 @@ from rasterio.warp import transform_bounds, transform_geom
 DATA_DIR = Path(__file__).resolve().parents[1] / "data"
 SERVICE = "https://ic.imagery1.arcgis.com/arcgis/rest/services/Sentinel2_10m_LandCover/ImageServer"
 SOURCE_PAGE = "https://livingatlas.arcgis.com/landcover/"
-YEARS = (2018, 2020, 2023, 2025)
+# Dashboard year -> source classification year. The annual series has no 2015
+# layer, so the closest available historical reference (2017) is used there.
+YEAR_SOURCES = {2015: 2017, 2018: 2018, 2020: 2020, 2023: 2023, 2025: 2025}
 # Codes in the published nine-class Esri / Impact Observatory legend.
 CLASSES = (
     ("built-up", "Suprafete construite", "#ef6b4a", (7,)),
@@ -108,16 +110,16 @@ def main():
         "dataset": "Esri / Impact Observatory / Microsoft Sentinel-2 10m Land Cover",
         "sourceUrl": SOURCE_PAGE, "serviceUrl": SERVICE,
         "license": "CC BY 4.0", "period": "anual",
-        "method": "Exportul rasterului anual la 10 m cu ID-ul anului blocat in serviciul Esri; numararea pixelilor clasificati in limitele GeoJSON ale sectoarelor. Norii si codurile necunoscute sunt exclusi din procente.",
+        "method": "Exportul rasterului anual la 10 m cu ID-ul anului sursa blocat in serviciul Esri; numararea pixelilor clasificati in limitele GeoJSON ale sectoarelor. Pentru selectia 2015 se foloseste cea mai apropiata clasificare disponibila, din 2017. Norii si codurile necunoscute sunt exclusi din procente.",
         "limitations": "Suprafetele construite includ si drumuri. Datele sunt anuale, nu medii ale verii; nu indica situatia unei parcele sau drepturile de construire.",
         "boundarySource": "OpenStreetMap/Nominatim; backend/data/bucharest-sectors.geojson",
         "years": {},
     }
     checksums = set()
-    for year in YEARS:
-        path = DATA_DIR / f"landcover_{year}.tif"
+    for year, source_year in YEAR_SOURCES.items():
+        path = DATA_DIR / f"landcover_{source_year}.tif"
         if args.download:
-            download(year, features, path)
+            download(source_year, features, path)
         if not path.is_file():
             raise FileNotFoundError(f"Lipseste {path}; ruleaza cu --download")
         with rasterio.open(path) as raster:
@@ -126,15 +128,15 @@ def main():
             data = raster.read(1)
             checksum = hashlib.sha256(data.tobytes()).hexdigest()
             if checksum in checksums:
-                raise ValueError(f"Rasterul {year} este identic cu alt an; verifica selectia temporala")
+                raise ValueError(f"Rasterul {source_year} este identic cu alt an; verifica selectia temporala")
             checksums.add(checksum)
             areas = {"all": summarize_area(data, raster.transform, raster.crs,
                                             [feature["geometry"] for feature in features])}
             for feature in features:
                 sector_id = str(feature["properties"]["sectorId"])
                 areas[sector_id] = summarize_area(data, raster.transform, raster.crs, [feature["geometry"]])
-            output["years"][str(year)] = {"sha256": checksum, "areas": areas}
-        print(f"{year}: {areas['all']['validPixels']} pixeli valizi in Bucuresti")
+            output["years"][str(year)] = {"sourceYear": source_year, "sha256": checksum, "areas": areas}
+        print(f"{year} (sursa {source_year}): {areas['all']['validPixels']} pixeli valizi in Bucuresti")
     target = DATA_DIR / "landcover-summary.json"
     target.write_text(json.dumps(output, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"Salvat {target}")

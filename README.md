@@ -102,7 +102,7 @@ Anii 2015, 2018, 2020 si 2023 sunt tratati ca repere istorice. Recomandarile de 
 |---|---|---|---|
 | LST | 2015, 2018, 2020, 2023, 2025 | rastere georeferentiate | observatii de vara; unitatea finala este Celsius |
 | NDVI | 2015, 2018, 2020, 2023, 2025 | Landsat 8, 30 m | metadatele livrate descriu cate o scena din august |
-| Land Cover | 2018, 2020, 2023, 2025 | Sentinel-2, 10 m, anual | clasificare Esri / Impact Observatory / Microsoft |
+| Land Cover | 2015, 2018, 2020, 2023, 2025 | Sentinel-2, 10 m, anual | selectia 2015 foloseste clasificarea de referinta din 2017 |
 | Limite | sase sectoare | GeoJSON WGS84 | folosite pentru contururi si statistici zonale |
 
 Pentru comparatii stiintifice finale trebuie confirmat ca metoda de pregatire LST este consecventa intre toti anii. Metadatele NDVI din proiect indica scene individuale, nu o medie iunie-august.

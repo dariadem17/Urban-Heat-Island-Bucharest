@@ -106,7 +106,7 @@ Every metric may be `null` when unavailable; arrays may be empty. Distribution `
 ]
 ```
 
-Categories are dynamic; the frontend does not assume a fixed count. Percentages should total approximately 100% after nodata handling and rounding. The current API serves annual source-backed summaries for 2018, 2020, 2023 and 2025; 2015 returns an empty array. The classification period differs from the summer LST/NDVI period. The built-up class includes roads and does not measure a parcel or planning eligibility.
+Categories are dynamic; the frontend does not assume a fixed count. Percentages should total approximately 100% after nodata handling and rounding. The current API serves annual source-backed summaries for 2018, 2020, 2023 and 2025. The 2015 selection uses the closest available classification, 2017, identified internally through `sourceYear`. The classification period differs from the summer LST/NDVI period. The built-up class includes roads and does not measure a parcel or planning eligibility.
 
 ## G. Comparison
 

@@ -150,11 +150,9 @@ The supplied GeoPackage contains six Bucharest sector polygons. The boundary lay
 
 ### 3.4 Land Cover
 
-No Land Cover raster/table was found in the uploaded data package.
+The current application contains annual Land Cover classifications and derived sector summaries for 2018, 2020, 2023 and 2025. For the 2015 dashboard selection, the closest available annual classification, 2017, is used as a reference and retained internally as `sourceYear: 2017`.
 
-The application already expects Land Cover analytically, so the database contract below supports it, but Land Cover values must be populated only from the team's validated Land Cover processing output.
-
-If Land Cover is unavailable for a year/area, the API must return `available: false`, not demo percentages.
+If Land Cover is unavailable for another year/area, the API must return `available: false`, not demo percentages.
 
 ---
 
@@ -1107,4 +1105,3 @@ Therefore this contract is grounded in:
 - the actual raster metadata inspected from the uploaded files.
 
 Before implementation, the backend developer should reconcile endpoint/model names with the real current branch. No existing endpoint should be broken merely to match the example names in this document.
-

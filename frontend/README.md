@@ -70,6 +70,8 @@ Detaliile repetitive despre metoda au fost reduse in interfata. Graficele pastre
 
 Pentru 2025, raportul pune accent pe situatia curenta si pe actiuni precum pastrarea arborilor, umbrirea traseelor pietonale, reducerea pavajului expus sau verificarea fezabilitatii unui acoperis verde.
 
+Tot in Explore, selectia 2025 afiseaza evolutia tuturor observatiilor disponibile. Pentru un sector, graficele arata abaterea LST si NDVI fata de media orasului; pentru Tot Bucurestiul, arata mediile orasului. Evolutia nu este afisata cand utilizatorul exploreaza un an istoric.
+
 Pentru anii anteriori, interfata nu ofera sfaturi ca si cum proiectul ar fi realizat in trecut. Anul selectat este prezentat ca reper si comparat cu 2025.
 
 ## Compara
@@ -79,7 +81,7 @@ Utilizatorul poate compara:
 - doua sectoare in acelasi an;
 - acelasi sector in doi ani.
 
-Comparatia temporala include toate observatiile disponibile si arata pozitia sectorului fata de media orasului. Linia zero este media Bucurestiului din anul respectiv. Acest design face vizibila persistenta unui semnal fara a prezenta seria drept prognoza.
+Comparatia temporala pune fata in fata cei doi ani selectati. Seria completa a observatiilor este pastrata in Explore pentru anul 2025, unde ofera context situatiei curente.
 
 ## Land Cover in Frontend
 

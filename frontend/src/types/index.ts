@@ -98,11 +98,13 @@ export type SectorStatistics = {
 };
 
 export type ReportSection = { title: string; body: string };
+export type TimelineEntry = { year: number; lst: number | null; ndvi: number | null; lstVsCity: number | null; ndviVsCity: number | null; builtPct: number | null; treesPct: number | null };
 export type EnvironmentalReport = {
   title: string;
   mode?: 'current' | 'historical';
   summary?: string;
   temporalSignal?: string | null;
+  timeline?: TimelineEntry[];
   sections: ReportSection[];
   dataNote: string;
   assessment?: {
@@ -164,7 +166,7 @@ export type ComparisonResult = {
   primary: ComparisonDataset;
   secondary: ComparisonDataset;
   metrics: ComparisonMetric[];
-  timeline?: { year: number; lst: number | null; ndvi: number | null; lstVsCity: number | null; ndviVsCity: number | null; builtPct: number | null; treesPct: number | null }[];
+  timeline?: TimelineEntry[];
   sharedLegend: LayerLegend;
   report: ReportSection[];
   isDemo: boolean;

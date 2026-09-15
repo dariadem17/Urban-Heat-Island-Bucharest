@@ -249,13 +249,14 @@ def assessment(year, area):
     cooling = {key: value for key, value in relationship(year, area).items() if key != "samplePoints"}
     cover = land_cover_record(year, area)
     city_cover = land_cover_record(year, "all")
+    cover_source_year = cover["sourceYear"] if cover else None
     built_pct = next((entry["percentage"] for entry in cover["entries"] if entry["categoryId"] == "built-up"), 0) if cover else None
     city_built_pct = next((entry["percentage"] for entry in city_cover["entries"] if entry["categoryId"] == "built-up"), 0) if city_cover else None
     facts = {
         "area": {"code": "bucharest" if area == "all" else f"sector_{area}", "name": area_name(area)},
         "year": year, "season": "summer", "thermal": thermal, "vegetation": vegetation,
         "cooling": cooling,
-        "landCover": {"available": bool(cover), "sourceYear": year if cover else None,
+        "landCover": {"available": bool(cover), "sourceYear": cover_source_year,
                       "period": "anual" if cover else None, "entries": cover["entries"] if cover else [],
                       "validPixels": cover["validPixels"] if cover else None},
         "builtPressure": {"available": bool(cover), "builtPct": built_pct, "cityBuiltPct": city_built_pct,
@@ -274,7 +275,7 @@ def assessment(year, area):
                                  "validPixels": ndvi["validPixels"] if ndvi else None},
                         "landCover": {"status": "DERIVED" if cover else "UNAVAILABLE",
                                       "source": "Esri / Impact Observatory / Microsoft Sentinel-2 Land Cover" if cover else None,
-                                      "sourceYear": year if cover else None}},
+                                      "sourceYear": cover_source_year}},
         "methodologyVersion": METHOD,
     }
     return apply_guidance(facts)

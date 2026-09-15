@@ -16,7 +16,6 @@ export function InsightsPanel({ report, loading, error, selectedSector, onCompar
   const recommendations = facts?.intervention.recommendations ?? [];
   const cityOverview = selectedSector === 'all';
   const historical = report?.mode === 'historical';
-  const suggestedSector = cityOverview ? facts?.benchmark.prioritySectors?.[0]?.sector : undefined;
   const nextSteps = historical
     ? ['Urmareste diferentele fata de media orasului, nu doar temperaturile absolute.', 'Foloseste anul 2025 si verificarea parcelei pentru deciziile de proiect.']
     : cityOverview
@@ -46,19 +45,18 @@ export function InsightsPanel({ report, loading, error, selectedSector, onCompar
               <h3 className="text-xs font-semibold text-slate-200">{section.title}</h3>
               <p className="mt-1 text-sm leading-6 text-slate-300">{section.body}</p>
             </section>) : null}
-            {report.temporalSignal && !historical ? <div className="rounded-xl border border-slate-700 bg-slate-950/50 p-3">
-              <h3 className="text-xs font-semibold text-slate-100">Semnal in timp</h3>
-              <p className="mt-1 text-xs leading-5 text-slate-300">{report.temporalSignal}</p>
-            </div> : null}
             <p className="border-t border-slate-800 pt-3 text-[11px] leading-5 text-slate-400">{report.dataNote}</p>
             <section className="rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.07] p-4">
               <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-300">Pasul urmator</h3>
               <ul className="mt-3 space-y-2 text-xs leading-5 text-slate-200">
                 {nextSteps.map((step) => <li key={step} className="flex gap-2"><span className="text-emerald-300">•</span><span>{step}</span></li>)}
               </ul>
-              <button type="button" onClick={() => onCompare(historical ? selectedSector : suggestedSector)} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-400 px-3 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300">
-                {historical ? 'Compara cu 2025' : 'Deschide comparatia'} <ArrowRightLeft className="h-4 w-4" />
-              </button>
+              {historical ? <button type="button" onClick={() => onCompare(selectedSector)} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-400 px-3 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300">
+                Compara cu 2025 <ArrowRightLeft className="h-4 w-4" />
+              </button> : <div className="mt-4 border-t border-emerald-500/20 pt-3">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-300">Despre evolutie</p>
+                <p className="mt-1 text-[11px] leading-5 text-slate-300">{cityOverview ? 'Graficul de evolutie arata cum au variat mediile LST si NDVI ale Bucurestiului in observatiile disponibile.' : report.temporalSignal ?? 'Graficul de evolutie arata daca diferenta sectorului fata de oras se repeta in timp.'}</p>
+              </div>}
             </section>
           </div> : <div className="mt-4 rounded-2xl border border-dashed border-slate-800 p-5 text-sm text-slate-500">Datele raportului nu sunt disponibile.</div>}
     </aside>
