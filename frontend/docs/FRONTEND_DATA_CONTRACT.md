@@ -1,7 +1,5 @@
 # Frontend data contract
 
-The current backend handoff contract is maintained at [`../BACKEND_CONTRACT.md`](../BACKEND_CONTRACT.md).
-
 The frontend consumes typed domain objects through `DashboardDataService`, selected by:
 
 - `VITE_DATA_MODE=demo` (default)
