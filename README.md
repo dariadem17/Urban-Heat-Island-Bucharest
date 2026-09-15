@@ -153,29 +153,3 @@ Un produs comercial ar putea oferi:
 
 Clientul nu cumpara o simpla harta, ci un raspuns mai rapid la intrebarea: **ce riscuri termice si ce oportunitati de infrastructura verde trebuie investigate inainte sa investim in acest amplasament?**
 
-## Structura repository-ului
-
-```text
-backend/
-  data/                  rastere locale, sumar Land Cover si limite
-  scripts/               reconstruirea datelor Land Cover
-  assessment.py          statistici raster si relatia LST-NDVI
-  database.py            citirea si scrierea rezultatelor SQLite
-  models.py              schema bazei de date
-  seed_db.py             popularea reproductibila a bazei
-  project_guidance.py    interpretari deterministe
-  main.py                API FastAPI si imagini pentru harta
-
-frontend/
-  public/data/           fallback pentru limitele sectoarelor
-  src/components/        harta, controale, grafice si rapoarte
-  src/hooks/             interogarea si sincronizarea datelor
-  src/services/          adaptor API si mod demonstrativ
-  src/types/             contractele TypeScript
-
-docs/                    documentatia LST si NDVI
-```
-
-Documentatia tehnica detaliata se afla in [ASSESSMENT_DATA_CONTRACT.md](ASSESSMENT_DATA_CONTRACT.md), [backend/REPORTING.md](backend/REPORTING.md) si [frontend/BACKEND_CONTRACT.md](frontend/BACKEND_CONTRACT.md).
-
-
