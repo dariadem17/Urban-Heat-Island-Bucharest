@@ -1,17 +1,95 @@
 # Frontend
 
-Frontend-ul transforma datele geospatiale si statistice intr-o experienta usor de folosit de un dezvoltator imobiliar. Este construit cu React, TypeScript, Vite, Tailwind CSS, MapLibre GL, Recharts si TanStack Query.
+## Despre Frontend
 
-## Obiectiv
+Frontend-ul este partea interactiva a aplicatiei Urban Heat Island Bucharest.
 
-Interfata nu incearca sa reproduca un software GIS. Ea organizeaza informatia in doua fluxuri:
+Aici sunt afisate hartile LST si NDVI, statisticile pentru Bucuresti si sectoare, graficele, datele Land Cover si comparatiile dintre zone sau ani.
 
-- **Exploreaza** pentru intelegerea unei zone si a unui an;
-- **Compara** pentru diferente intre doua sectoare sau evolutia aceluiasi sector intre ani.
+Interfata este construita cu React si TypeScript si comunica cu backend-ul FastAPI pentru obtinerea datelor.
 
-## Pornire
+Principalele tehnologii folosite sunt:
 
-Backend-ul trebuie pornit pe `127.0.0.1:8000`.
+- React;
+- TypeScript;
+- Vite;
+- Tailwind CSS;
+- MapLibre GL;
+- Recharts;
+- TanStack Query.
+
+---
+
+## Structura aplicatiei
+
+Aplicatia este impartita in doua moduri principale:
+
+### Explore
+
+Este modul principal de explorare a datelor.
+
+Utilizatorul poate selecta:
+
+- Bucuresti sau unul dintre cele sase sectoare;
+- anul;
+- stratul LST sau NDVI;
+- opacitatea stratului de pe harta.
+
+Pe langa harta, sunt afisate statisticile si graficele disponibile pentru selectia curenta.
+
+### Compare
+
+Este modul folosit pentru comparatii.
+
+Utilizatorul poate compara:
+
+- doua sectoare pentru acelasi an;
+- acelasi sector pentru doi ani diferiti.
+
+Astfel, Explore este folosit pentru analiza unei selectii, iar Compare pentru a vedea diferentele dintre doua selectii.
+
+---
+
+## Anul 2025 si reperele istorice
+
+In aplicatie, anul 2025 este folosit ca observatia cea mai recenta.
+
+Pentru 2025, sectiunea Explore poate afisa si evolutia LST si NDVI folosind observatiile istorice disponibile:
+
+```text
+2015 -> 2018 -> 2020 -> 2023 -> 2025
+```
+
+Pentru un sector, graficele de evolutie urmaresc valorile LST si NDVI si diferenta lor fata de media Bucurestiului.
+
+Pentru selectia `Tot Bucurestiul`, sunt afisate valorile medii ale orasului pentru anii disponibili.
+
+Anii:
+
+```text
+2015
+2018
+2020
+2023
+```
+
+sunt tratati in principal ca repere istorice.
+
+Cand este selectat un an istoric in Explore, interfata se concentreaza pe datele acelui an si permite folosirea lui ca punct de comparatie cu situatia din 2025.
+
+In acest fel, seria istorica ofera context pentru datele recente, fara sa fie prezentata ca prognoza.
+
+---
+
+## Pornirea frontend-ului
+
+Backend-ul trebuie sa ruleze pe:
+
+```text
+http://127.0.0.1:8000
+```
+
+Pentru pornirea frontend-ului:
 
 ```powershell
 cd frontend
@@ -20,106 +98,303 @@ npm install
 npm run dev
 ```
 
-Configuratia API:
+Configuratia pentru API este:
 
 ```env
 VITE_DATA_MODE=api
 VITE_API_BASE_URL=http://127.0.0.1:8000/api
 ```
 
-Pentru o demonstratie fara backend, elimina `.env` sau seteaza `VITE_DATA_MODE=demo`. In acest mod, valorile sunt marcate drept demonstrative.
+Aplicatia ruleaza de obicei pe:
 
-## Tehnologii si motivatia lor
+```text
+http://localhost:5173
+```
 
-| Tehnologie | De ce a fost folosita |
+---
+
+## Modul demo
+
+Frontend-ul poate fi pornit si fara backend folosind date demonstrative.
+
+Pentru acest mod se poate elimina fisierul `.env` sau se poate seta:
+
+```env
+VITE_DATA_MODE=demo
+```
+
+Datele folosite in acest mod trebuie tratate ca date demonstrative si nu ca rezultate reale ale analizei.
+
+Modul demo a fost pastrat pentru dezvoltarea si testarea interfetei atunci cand backend-ul sau fisierele raster nu sunt disponibile.
+
+---
+
+## Tehnologii folosite
+
+| Tehnologie | Rol in proiect |
 |---|---|
-| React + TypeScript | componente reutilizabile si contracte clare pentru date |
-| Vite | dezvoltare si build rapid |
-| Tailwind CSS | layout responsiv si stil vizual coerent |
-| MapLibre GL | overlay-uri georeferentiate si limite vectoriale interactive |
-| Recharts | grafice comparative si distributii usor de citit |
-| TanStack Query | incarcare, cache si stari de eroare pentru API |
+| React + TypeScript | componentele si logica interfetei |
+| Vite | rularea si build-ul aplicatiei |
+| Tailwind CSS | stilizare si layout responsive |
+| MapLibre GL | harta si overlay-urile georeferentiate |
+| Recharts | grafice si comparatii |
+| TanStack Query | request-uri catre API, cache si tratarea starilor de incarcare |
+
+---
 
 ## Componente principale
 
+Frontend-ul este impartit in mai multe componente pentru a separa harta, controalele si partea de analiza.
+
 | Componenta | Rol |
 |---|---|
-| `ControlPanel` | sector, an, strat si opacitate |
-| `MapPanel` | basemap, LST/NDVI si contururile sectoarelor |
-| `AnalyticsPanel` | indicatorii principali |
-| `ChartPanel` | distributii, Land Cover si relatia LST-NDVI |
-| `InsightsPanel` | raportul pentru Explore |
-| `ComparisonPanel` | harti, metrici, grafice si interpretare comparativa |
+| `ControlPanel` | selectarea sectorului, anului, stratului si opacitatii |
+| `MapPanel` | harta, LST/NDVI si limitele sectoarelor |
+| `AnalyticsPanel` | statisticile principale |
+| `ChartPanel` | grafice, distributii si Land Cover |
+| `InsightsPanel` | interpretarea datelor din Explore |
+| `ComparisonPanel` | comparatia dintre doua zone sau doi ani |
 
-Serviciile din `src/services/` separa interfata de sursa datelor. `apiService.ts` consuma FastAPI, iar `mockApi.ts` mentine aplicatia demonstrabila atunci cand backend-ul nu este disponibil.
+Aceasta impartire ne-a ajutat sa nu punem toata logica aplicatiei intr-o singura componenta.
 
-## Reasoning de produs
+---
 
-Ordinea informatiei urmareste intrebarile unui utilizator care vede aplicatia pentru prima data:
+## Comunicarea cu backend-ul
 
-1. Ce zona si ce strat privesc?
-2. Unde este limita exacta a sectorului?
-3. Care sunt cifrele principale?
-4. Cum sunt distribuite valorile?
-5. Ce spun LST, NDVI si Land Cover impreuna?
-6. Ce merita verificat intr-un proiect actual?
+Logica pentru obtinerea datelor este separata de componentele vizuale.
 
-Detaliile repetitive despre metoda au fost reduse in interfata. Graficele pastreaza cifrele, iar raportul explica legaturile si formuleaza actiuni concrete, dar conditionale.
+Fisierele din:
 
-## Exploreaza
+```text
+src/services/
+```
 
-Pentru 2025, raportul pune accent pe situatia curenta si pe actiuni precum pastrarea arborilor, umbrirea traseelor pietonale, reducerea pavajului expus sau verificarea fezabilitatii unui acoperis verde.
+se ocupa de sursa datelor.
 
-Tot in Explore, selectia 2025 afiseaza evolutia tuturor observatiilor disponibile. Pentru un sector, graficele arata abaterea LST si NDVI fata de media orasului; pentru Tot Bucurestiul, arata mediile orasului. Evolutia nu este afisata cand utilizatorul exploreaza un an istoric.
+`apiService.ts` comunica cu backend-ul FastAPI.
 
-Pentru anii anteriori, interfata nu ofera sfaturi ca si cum proiectul ar fi realizat in trecut. Anul selectat este prezentat ca reper si comparat cu 2025.
+`mockApi.ts` este folosit pentru modul demo.
 
-## Compara
+Fluxul general este:
 
-Utilizatorul poate compara:
+```text
+Utilizator
+    ->
+Componente React
+    ->
+Data Service
+    ->
+FastAPI Backend
+    ->
+Date si statistici
+```
 
-- doua sectoare in acelasi an;
-- acelasi sector in doi ani.
+Aceasta structura permite folosirea aceleiasi interfete atat cu datele reale din API, cat si cu datele demonstrative in timpul dezvoltarii.
 
-Comparatia temporala pune fata in fata cei doi ani selectati. Seria completa a observatiilor este pastrata in Explore pentru anul 2025, unde ofera context situatiei curente.
+---
+
+## Harta
+
+Harta este realizata cu MapLibre GL.
+
+Pe harta pot fi afisate:
+
+- stratul LST;
+- stratul NDVI;
+- limitele celor sase sectoare;
+- sectorul selectat;
+- legenda corespunzatoare stratului;
+- controlul opacitatii.
+
+Toate limitele sectoarelor raman vizibile pentru context.
+
+Sectorul selectat este evidentiat mai clar, iar celelalte limite sunt afisate mai discret.
+
+Aceeasi idee este folosita atat in Explore, cat si pe hartile din Compare.
+
+Stratul raster este adaugat dupa ce stilul hartii a fost incarcat. Acest lucru evita eroarea MapLibre:
+
+```text
+Style is not done loading
+```
+
+---
+
+## Grafice si statistici
+
+Frontend-ul afiseaza statisticile primite de la backend sub forma de carduri si grafice.
+
+Pentru LST pot fi afisate:
+
+- temperatura medie;
+- temperatura minima;
+- temperatura maxima;
+- procentul de hotspot;
+- distributia temperaturilor;
+- diferenta fata de media Bucurestiului.
+
+Pentru NDVI pot fi afisate:
+
+- NDVI mediu;
+- NDVI minim;
+- NDVI maxim;
+- distributia valorilor;
+- diferenta fata de media Bucurestiului.
+
+Pentru datele compatibile poate fi afisata si analiza comuna LST-NDVI.
+
+---
+
+## Evolutia LST si NDVI
+
+Pentru selectia 2025 din Explore, frontend-ul foloseste anii disponibili pentru a oferi context istoric.
+
+Seria poate include:
+
+```text
+2015
+2018
+2020
+2023
+2025
+```
+
+Graficele permit observarea modului in care valorile LST si NDVI difera intre observatiile disponibile.
+
+Aceste puncte nu reprezinta o serie continua de masuratori si nu sunt folosite pentru prognoza.
+
+Fiecare an reprezinta o observatie separata obtinuta din datele disponibile pentru proiect.
+
+Din acest motiv, in interfata folosim termenul de evolutie sau context istoric, dar nu prezentam seria ca predictie a temperaturii sau vegetatiei.
+
+---
+
+## Compare
+
+Modul Compare permite analiza a doua selectii in paralel.
+
+### Comparatie intre sectoare
+
+Pot fi selectate doua sectoare pentru acelasi an.
+
+Aplicatia afiseaza hartile si indicatorii pentru ambele zone, ceea ce permite observarea diferentelor dintre ele.
+
+### Comparatie intre ani
+
+Poate fi selectat acelasi sector pentru doi ani diferiti.
+
+De exemplu:
+
+```text
+Sector 3 - 2018
+vs
+Sector 3 - 2025
+```
+
+Aceasta comparatie este utila pentru folosirea anilor anteriori ca repere fata de observatia recenta din 2025.
+
+Compare nu transforma diferentele observate intr-o relatie de cauza-efect. Aplicatia prezinta valorile disponibile si diferentele dintre ele.
+
+---
 
 ## Land Cover in Frontend
 
-Land Cover este inclus in contributia Frontend deoarece aici devine util pentru utilizator:
+Land Cover este integrat in frontend ca informatie suplimentara pentru interpretarea LST si NDVI.
 
-- clasele sunt prezentate cu denumiri clare;
-- barele compara ponderea terenului construit, arborilor, vegetatiei joase, culturilor, apei si solului;
-- valorile sunt legate de LST si NDVI in interpretare;
-- componenta apare ca analiza, nu ca strat selectabil pe harta.
+Datele pot include categorii precum:
 
-Procesarea numerica este facuta in Backend. Frontend-ul nu inventeaza valori lipsa si nu transforma intervalele NDVI in clase Land Cover.
+- zone construite;
+- arbori;
+- vegetatie joasa;
+- culturi;
+- apa;
+- sol.
 
-## Harta si limitele sectoarelor
+Frontend-ul se ocupa de modul in care aceste valori sunt prezentate si comparate.
 
-MapLibre afiseaza toate granitele sectoriale peste overlay. Sectorul selectat primeste un contur mai vizibil, iar restul limitelor raman subtile. Aceeasi regula este aplicata in Explore si pe ambele harti din Compare.
+Procesarea si calcularea procentelor sunt realizate in backend.
 
-Stratul raster este adaugat numai dupa incarcarea stilului hartii. Aceasta ordine evita eroarea MapLibre `Style is not done loading`.
+Land Cover nu este obtinut din intervalele NDVI si nu este afisat ca valoare reala atunci cand datele nu sunt disponibile.
 
-## Rapoarte
+In versiunea actuala, Land Cover este folosit ca parte a analizei si nu ca strat principal selectabil pe harta.
 
-Frontend-ul primeste interpretarea de la backend si afiseaza:
+---
 
-- diagnosticul principal;
-- semnalul temporal, cand exista;
-- doua sau trei actiuni usor de parcurs;
-- o nota scurta despre nivelul datelor.
+## Interpretarea datelor
 
-Nu sunt afisate estimari fabricate precum reducerea LST cu un anumit numar de grade sau reducerea poluarii cu un procent.
+Pe langa valorile numerice, interfata poate afisa o interpretare scurta a datelor primite.
+
+Aceasta poate combina informatii despre:
+
+- LST;
+- NDVI;
+- hotspot-uri;
+- Land Cover;
+- diferenta fata de Bucuresti;
+- evolutia observatiilor disponibile.
+
+Interpretarea este folosita pentru a explica mai simplu ceea ce se vede in grafice si pe harta.
+
+Nu sunt afisate estimari care nu pot fi sustinute de date, de exemplu:
+
+```text
+Plantarea arborilor va reduce temperatura cu X grade C.
+```
+
+sau:
+
+```text
+Aceasta interventie va reduce poluarea cu X%.
+```
+
+Aplicatia este folosita pentru explorarea si compararea datelor, nu pentru estimarea exacta a efectului unei interventii viitoare.
+
+---
+
+## Tratarea erorilor si a datelor lipsa
+
+Frontend-ul trateaza separat starile:
+
+```text
+loading
+error
+unavailable
+```
+
+Daca backend-ul nu are date pentru o anumita combinatie de zona si an, frontend-ul nu trebuie sa inventeze o valoare.
+
+Datele lipsa sunt afisate ca indisponibile.
+
+Aceasta regula este importanta mai ales pentru comparatiile intre ani si pentru Land Cover.
+
+---
 
 ## Build si verificare
+
+Pentru verificarea frontend-ului:
 
 ```powershell
 cd frontend
 npm run lint
 npm run build
+```
+
+Pentru verificarea build-ului local:
+
+```powershell
 npm run preview
 ```
 
-## Contributia membrului Frontend
+Inainte de integrarea finala cu backend-ul trebuie verificate:
 
-Pentru prezentarea echipei, aceasta parte poate include: arhitectura componentelor, designul responsiv, integrarea MapLibre, contururile sectoarelor, graficele Recharts, fluxurile Explore/Compare, tratarea erorilor, traducerea in romana si integrarea vizuala Land Cover.
+- incarcarea hartii;
+- schimbarea sectorului;
+- schimbarea anului;
+- schimbarea LST/NDVI;
+- graficele;
+- evolutia pentru 2025;
+- comparatiile intre sectoare;
+- comparatiile intre ani;
+- Land Cover;
+- starile de loading si error;
+- comportamentul aplicatiei cand anumite date lipsesc.
