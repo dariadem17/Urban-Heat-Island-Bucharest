@@ -1,20 +1,77 @@
 # Backend
 
-Backend-ul transforma fisierele geospatiale in date coerente pentru harta, grafice, comparatii si rapoarte. Este construit cu FastAPI, Rasterio, NumPy, SciPy si Matplotlib.
+## Despre Backend
 
-## Responsabilitati
+Backend-ul aplicatiei Urban Heat Island Bucharest este construit cu FastAPI si se ocupa de procesarea datelor LST, NDVI si Land Cover.
+
+El face legatura dintre fisierele geospatiale, baza de date locala si frontend.
+
+Backend-ul citeste si proceseaza datele, calculeaza statisticile necesare si le pune la dispozitia frontend-ului prin API.
+
+Principalele tehnologii folosite sunt:
+
+- FastAPI;
+- Rasterio;
+- NumPy;
+- SciPy;
+- Matplotlib;
+- SQLite.
+
+---
+
+## Ce face Backend-ul
+
+Backend-ul se ocupa de:
 
 - citirea rasterelor LST si NDVI;
-- conversia si validarea valorilor;
-- decuparea pe Bucuresti si pe cele sase sectoare;
-- statistici zonale si distributii;
-- calcularea relatiei LST-NDVI;
-- citirea procentelor Land Cover precompute;
-- generarea imaginilor georeferentiate pentru harta;
-- API pentru Explore si Compare;
-- interpretari deterministe pentru dezvoltatori.
+- validarea valorilor;
+- conversia valorilor LST atunci cand este necesar;
+- decuparea datelor pentru Bucuresti si cele sase sectoare;
+- calcularea statisticilor;
+- calcularea hotspot-urilor;
+- calcularea relatiei dintre LST si NDVI;
+- citirea datelor Land Cover;
+- salvarea rezultatelor calculate in SQLite;
+- generarea imaginilor folosite pe harta;
+- furnizarea datelor prin API;
+- comparatiile intre sectoare si ani;
+- generarea interpretarilor folosite in Explore.
 
-## Pornire
+---
+
+## Arhitectura
+
+Fluxul general al datelor este:
+
+```text
+GeoTIFF LST / NDVI       Land Cover       GeoJSON sectoare
+          \                  |                  /
+           \                 |                 /
+                    Backend FastAPI
+                          |
+                          v
+                Procesare si statistici
+                          |
+                          v
+                       SQLite
+                          |
+                          v
+                         API
+                          |
+                          v
+                 Frontend React
+                          |
+                          v
+              Explore / Compare / Harta
+```
+
+Rasterele originale raman in fisiere GeoTIFF.
+
+Nu salvam fiecare pixel intr-un tabel SQLite. Baza de date este folosita pentru rezultatele calculate si pentru informatiile necesare aplicatiei.
+
+---
+
+## Pornirea backend-ului
 
 Din radacina repository-ului:
 
@@ -22,7 +79,17 @@ Din radacina repository-ului:
 ./backend/start-backend.cmd
 ```
 
-Scriptul intra automat in directorul corect si porneste API-ul la `http://127.0.0.1:8000`. Documentatia interactiva se afla la `http://127.0.0.1:8000/docs`.
+Scriptul porneste API-ul la:
+
+```text
+http://127.0.0.1:8000
+```
+
+Documentatia interactiva FastAPI poate fi accesata la:
+
+```text
+http://127.0.0.1:8000/docs
+```
 
 Pentru o instalare noua:
 
@@ -32,98 +99,400 @@ py -m venv backend/.venv
 ./backend/start-backend.cmd
 ```
 
-## Module
+---
+
+## Module principale
 
 | Fisier | Rol |
 |---|---|
-| `main.py` | configurarea FastAPI, endpoint-uri, procesarea imaginilor pentru harta |
-| `assessment.py` | pixeli, statistici, hotspoturi, relatie LST-NDVI si timeline |
-| `land_cover.py` | adaptor pentru sumarul anual Land Cover |
-| `database.py` | persistenta SQLite pentru rezultatele calculate |
-| `models.py` | schema tabelelor SQLite |
-| `seed_db.py` | popularea reproductibila din TIFF-uri si JSON |
-| `project_guidance.py` | interpretari si recomandari bazate pe reguli |
-| `scripts/build_land_cover.py` | descarcare si agregare Land Cover pe sectoare |
+| `main.py` | configurarea FastAPI, endpoint-uri si imaginile pentru harta |
+| `assessment.py` | statistici, hotspot-uri, relatie LST-NDVI si timeline |
+| `land_cover.py` | citirea si pregatirea datelor Land Cover |
+| `database.py` | conexiunea si persistenta SQLite |
+| `models.py` | schema tabelelor din baza de date |
+| `seed_db.py` | popularea bazei de date din TIFF-uri si JSON |
+| `project_guidance.py` | interpretarile bazate pe reguli |
+| `scripts/build_land_cover.py` | descarcarea si agregarea Land Cover pe sectoare |
 | `data/bucharest-sectors.geojson` | limitele celor sase sectoare |
+
+---
 
 ## Endpoint-uri principale
 
-| Metoda | Ruta | Scop |
+| Metoda | Ruta | Rol |
 |---|---|---|
-| GET | `/api/years` | anii disponibili |
-| GET | `/api/availability` | disponibilitatea fiecarui strat |
-| GET | `/api/sectors` | lista zonelor |
-| GET | `/api/boundaries/sectors` | limite GeoJSON |
-| GET | `/api/map-layers/{lst\|ndvi}` | imagine si legenda pentru harta |
-| GET | `/api/statistics` | statistici LST, NDVI si relatie |
-| GET | `/api/statistics/land-cover` | procente Land Cover |
-| GET | `/api/assessment/{year}/{area}` | evaluare structurata |
-| POST | `/api/comparisons` | comparatie sector/an si timeline |
-| POST | `/api/reports/explore` | raport scurt pentru Explore |
+| GET | `/api/years` | returneaza anii disponibili |
+| GET | `/api/availability` | verifica disponibilitatea datelor |
+| GET | `/api/sectors` | returneaza zonele disponibile |
+| GET | `/api/boundaries/sectors` | returneaza limitele sectoarelor |
+| GET | `/api/map-layers/{lst\|ndvi}` | returneaza stratul si legenda pentru harta |
+| GET | `/api/statistics` | returneaza statisticile LST si NDVI |
+| GET | `/api/statistics/land-cover` | returneaza procentele Land Cover |
+| GET | `/api/assessment/{year}/{area}` | returneaza evaluarea pentru zona selectata |
+| POST | `/api/comparisons` | compara sectoare sau ani |
+| POST | `/api/reports/explore` | returneaza interpretarea folosita in Explore |
 
-## Reasoning tehnic
+---
 
-Rasterele contin dovada spatiala si raman in GeoTIFF. API-ul trimite browserului doar ce are nevoie: o imagine pentru overlay, limite GeoJSON si statistici JSON. Aceasta alegere evita stocarea fiecarui pixel intr-o baza relationala si pastreaza calculele reproductibile.
+## Procesarea datelor
 
-Rezultatele costisitoare sunt memorate in proces cu `lru_cache`. La nivel de prototip, aceasta reduce citirile repetate atunci cand utilizatorul schimba intre Explore si Compare.
+Rasterele LST si NDVI contin informatia spatiala principala a proiectului.
 
-Rapoartele sunt deterministe. Textul este ales din reguli care citesc LST, NDVI, hotspoturile si Land Cover. Nu este folosit un LLM si nu sunt inventate valori. Pentru anii istorici, raportul compara cu 2025; pentru 2025, ofera actiuni conditionale de verificat in proiect.
+Backend-ul foloseste Rasterio si NumPy pentru citirea si procesarea lor.
 
-## Land Cover in Backend
+In functie de request, datele sunt analizate pentru:
 
-Land Cover este procesat ca un set separat deoarece este o clasificare anuala la 10 m, in timp ce LST si NDVI sunt rastere de vara la 30 m. Scriptul:
+```text
+Tot Bucurestiul
+```
 
-1. obtine imaginea anuala corecta din serviciul Esri;
-2. pastreaza clasele prin nearest-neighbor;
-3. decupeaza dupa limitele sectoarelor;
-4. numara pixelii valizi pe clasa;
-5. scrie procentele si hash-urile in `landcover-summary.json`.
+sau pentru unul dintre:
 
-Rebuild optional:
+```text
+Sector 1
+Sector 2
+Sector 3
+Sector 4
+Sector 5
+Sector 6
+```
+
+Pentru fiecare selectie sunt folositi doar pixelii valizi din interiorul zonei analizate.
+
+Rezultatele sunt apoi trimise frontend-ului sub forma de JSON sau sub forma stratului necesar pentru harta.
+
+---
+
+## Procesarea LST
+
+Pentru LST, backend-ul poate calcula:
+
+- temperatura medie;
+- temperatura minima;
+- temperatura maxima;
+- distributia temperaturilor;
+- procentul de hotspot;
+- diferenta fata de media Bucurestiului.
+
+Daca rasterul Landsat `ST_B10` contine valori scalate, backend-ul aplica conversia necesara pentru obtinerea valorilor in Celsius.
+
+Hotspot-urile sunt definite folosind percentila 90 a valorilor LST valide din Bucuresti pentru anul analizat.
+
+Astfel, pragul este calculat separat pentru fiecare observatie.
+
+---
+
+## Procesarea NDVI
+
+Pentru NDVI, backend-ul poate calcula:
+
+- NDVI mediu;
+- NDVI minim;
+- NDVI maxim;
+- distributia valorilor;
+- procentul pixelilor peste pragul folosit in proiect;
+- diferenta fata de media Bucurestiului.
+
+Valorile sunt pastrate in intervalul valid:
+
+```text
+-1 ... 1
+```
+
+NDVI este tratat separat de Land Cover.
+
+Intervalele NDVI nu sunt transformate automat in clase precum cladiri, arbori sau apa.
+
+---
+
+## Relatia dintre LST si NDVI
+
+Pentru anii in care rasterele sunt compatibile, backend-ul poate analiza LST si NDVI impreuna.
+
+Inainte de calcul sunt verificate:
+
+- CRS-ul;
+- rezolutia;
+- grila raster;
+- zona analizata;
+- pixelii valizi comuni.
+
+Pentru pixelii compatibili pot fi calculate:
+
+- corelatia Pearson;
+- corelatia Spearman;
+- contrastul dintre temperaturile asociate unor valori NDVI diferite;
+- un esantion de puncte pentru grafic.
+
+O corelatie negativa arata ca valorile NDVI mai mari tind sa coincida cu valori LST mai mici in observatia analizata.
+
+Aceasta este o asociere statistica si nu este prezentata ca relatie de cauzalitate.
+
+---
+
+## Land Cover
+
+Land Cover este procesat separat de LST si NDVI.
+
+LST si NDVI folosesc date Landsat la rezolutie de 30 m, in timp ce Land Cover foloseste o clasificare anuala la 10 m.
+
+Scriptul pentru Land Cover:
+
+1. obtine imaginea corespunzatoare anului;
+2. pastreaza clasele folosind nearest-neighbor;
+3. decupeaza datele dupa limitele sectoarelor;
+4. numara pixelii valizi pentru fiecare clasa;
+5. calculeaza procentele;
+6. salveaza rezultatele in `landcover-summary.json`.
+
+Pentru reconstruirea datelor Land Cover:
 
 ```powershell
 ./backend/.venv/Scripts/python.exe backend/scripts/build_land_cover.py --download
 ```
 
-## Baza de date locala
+Clasele pot include:
 
-Backendul salveaza automat in `backend/uhi_data.db` statisticile calculate din
-TIFF-uri si sumarul Land Cover citit din JSON. La urmatoarea pornire, rezultatele
-neschimbate sunt citite din SQLite. Semnatura fisierului sursa este verificata;
-daca un TIFF sau JSON se modifica, randul aferent este recalculat automat.
+- suprafete construite;
+- arbori;
+- vegetatie joasa;
+- culturi;
+- apa;
+- sol.
 
-Pentru a genera toate combinatiile de ani si zone inainte de pornirea API-ului:
+Clasa `Suprafete construite` poate include si drumuri.
+
+Land Cover este folosit ca informatie de context si nu descrie dreptul de construire sau situatia exacta a unei parcele.
+
+---
+
+## Baza de date
+
+Backend-ul foloseste o baza de date locala SQLite.
+
+Fisierul este:
+
+```text
+backend/uhi_data.db
+```
+
+In baza de date sunt salvate rezultatele calculate din rasterele LST si NDVI si datele Land Cover.
+
+Rasterele complete nu sunt introduse in SQLite.
+
+Structura este:
+
+```text
+GeoTIFF / JSON
+      |
+      v
+Procesare Backend
+      |
+      v
+   SQLite
+      |
+      v
+     API
+```
+
+La urmatoarea pornire, rezultatele care nu s-au schimbat pot fi citite direct din baza de date, fara recalcularea completa a datelor.
+
+Backend-ul verifica si semnatura fisierului sursa. Daca un TIFF sau fisierul JSON se modifica, rezultatele corespunzatoare pot fi recalculate.
+
+---
+
+## Ce se salveaza in SQLite
+
+Baza de date poate contine:
+
+- media, minimul si maximul LST;
+- distributia LST;
+- procentul de hotspot;
+- media, minimul si maximul NDVI;
+- distributia NDVI;
+- procentul pixelilor NDVI peste `0.4`;
+- corelatiile Pearson si Spearman;
+- datele necesare graficului LST-NDVI;
+- procentele Land Cover;
+- anul sursei Land Cover;
+- numarul pixelilor valizi;
+- informatii despre fisierele sursa.
+
+Aceasta abordare evita recalcularea inutila a acelorasi statistici.
+
+---
+
+## Generarea bazei de date
+
+Pentru generarea combinatiilor disponibile inainte de pornirea API-ului poate fi folosit:
 
 ```powershell
 .\backend\seed-db.cmd
 ```
 
-Fisierul `uhi_data.db` este local si nu se trimite pe Git. Schema si scriptul de
-populare se trimit, iar fiecare membru al echipei isi genereaza aceeasi baza din
-fisierele TIFF locale si din `landcover-summary.json` urmarit de Git.
+Fisierul:
 
-Selectiile disponibile sunt 2015, 2018, 2020, 2023 si 2025. Pentru selectia 2015 este folosita cea mai apropiata clasificare disponibila, din 2017; anul sursa ramane in metadatele interne. Clasa `Suprafete construite` include drumuri. Land Cover nu este o medie a verii si nu descrie dreptul de construire al unei parcele.
+```text
+uhi_data.db
+```
 
-### Ce se stocheaza
+este local si nu este urcat pe GitHub.
 
-- mediile, minimele, maximele si distributiile LST si NDVI;
-- procentul zonelor foarte calde si al pixelilor cu NDVI peste 0.4;
-- corelatiile Pearson si Spearman, contrastul termic si esantionul graficului;
-- procentele Land Cover, anul clasificarii si numarul pixelilor valizi;
-- semnaturile fisierelor sursa folosite pentru invalidarea automata a cache-ului.
+In repository sunt pastrate schema bazei de date si scripturile necesare pentru generarea ei.
 
-Rapoartele si recomandarile raman generate din aceste valori prin regulile din
-`project_guidance.py`, astfel incat textul sa reflecte mereu datele persistate.
+Astfel, fiecare membru al echipei poate genera baza locala folosind fisierele TIFF disponibile si datele Land Cover.
+
+---
+
+## Anii disponibili
+
+Aplicatia foloseste selectiile:
+
+```text
+2015
+2018
+2020
+2023
+2025
+```
+
+
+---
+
+## Cache
+
+Unele rezultate sunt pastrate temporar in memorie folosind `lru_cache`.
+
+Acest lucru reduce procesarea repetata atunci cand utilizatorul schimba intre Explore si Compare sau revine la o selectie deja analizata.
+
+SQLite si cache-ul din memorie au roluri diferite:
+
+- SQLite pastreaza rezultatele calculate intre pornirile aplicatiei;
+- `lru_cache` evita repetarea unor operatii in timpul aceleiasi sesiuni a backend-ului.
+
+---
+
+## Explore si datele istorice
+
+Pentru 2025, backend-ul poate furniza datele necesare pentru contextul temporal LST si NDVI folosind observatiile disponibile:
+
+```text
+2015 -> 2018 -> 2020 -> 2023 -> 2025
+```
+
+Anii anteriori sunt folositi ca repere istorice.
+
+Pentru o selectie istorica, backend-ul poate furniza si comparatia cu 2025, astfel incat frontend-ul sa poata prezenta diferenta fata de observatia cea mai recenta.
+
+Aceste diferente sunt descriptive si nu sunt tratate automat ca efectul unei anumite schimbari urbane.
+
+---
+
+## Compare
+
+Backend-ul ofera datele necesare pentru doua tipuri principale de comparatie:
+
+### Doua sectoare
+
+```text
+Sector A - acelasi an
+vs
+Sector B - acelasi an
+```
+
+### Acelasi sector in doi ani
+
+```text
+Sector A - anul 1
+vs
+Sector A - anul 2
+```
+
+Pentru fiecare comparatie sunt returnate doar valorile disponibile si compatibile.
+
+
+---
+
+## Interpretari si rapoarte
+
+Backend-ul poate genera interpretari scurte pe baza valorilor calculate.
+
+Logica se afla in:
+
+```text
+project_guidance.py
+```
+
+Interpretarile sunt bazate pe reguli si folosesc date precum:
+
+- LST;
+- NDVI;
+- hotspot-uri;
+- diferente fata de Bucuresti;
+- Land Cover;
+- comparatii temporale.
+
+Nu este folosit un LLM pentru generarea acestor texte.
+
+Pentru anii istorici, interpretarea poate folosi 2025 ca reper.
+
+Pentru 2025, interpretarea se concentreaza pe situatia observata si pe elementele care merita verificate mai departe.
+
+Recomandarile nu includ estimari fabricate despre reducerea temperaturii sau a poluarii.
+
+---
+
+## Date lipsa
+
+Daca o sursa nu este disponibila, backend-ul nu trebuie sa returneze valori inventate.
+
+De exemplu, lipsa Land Cover pentru o anumita selectie nu trebuie reprezentata prin:
+
+```json
+{
+  "built_up_pct": 0
+}
+```
+
+daca valoarea reala nu este cunoscuta.
+
+API-ul trebuie sa permita frontend-ului sa diferentieze intre:
+
+```text
+valoare reala = 0
+```
+
+si:
+
+```text
+valoare indisponibila
+```
+
+Aceasta regula este folosita si pentru LST, NDVI si comparatiile dintre ani.
+
+---
 
 ## Verificare
 
-Porneste API-ul si verifica `/docs`, `/api/years`, o selectie `/api/statistics` si ambele tipuri de `/api/comparisons`.
+Dupa pornirea backend-ului poate fi verificata documentatia FastAPI:
 
-## Contributia membrului Backend
+```text
+http://127.0.0.1:8000/docs
+```
 
-Pentru prezentarea echipei, aceasta parte poate include: proiectarea contractului API, integrarea rasterelor, statistici zonale, caching, endpoint-uri, corelatii, comparatii temporale, rapoarte deterministe si integrarea tehnica Land Cover.
+Pentru o verificare de baza trebuie testate:
 
-## Referinte pentru Land Cover
+- `/api/years`;
+- `/api/availability`;
+- `/api/sectors`;
+- `/api/statistics`;
+- `/api/statistics/land-cover`;
+- un strat LST;
+- un strat NDVI;
+- comparatia intre doua sectoare;
+- comparatia intre doi ani;
+- raspunsul pentru Explore.
 
-- [Esri Living Atlas - Sentinel-2 10 m Land Cover](https://livingatlas.arcgis.com/landcover/)
-- [Google Earth Engine - colectii Sentinel](https://developers.google.com/earth-engine/datasets/catalog/sentinel)
+Pentru verificarea completa trebuie testate atat datele disponibile, cat si cazurile in care anumite fisiere lipsesc.
+
+---
